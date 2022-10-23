@@ -26,7 +26,6 @@ BITOR = "_BITOR"
 BITXOR = "_BITXOR"
 PLUS = "PLUS"
 MINUS = "MINUS"
-OPERATORS = {MINUS, PLUS}
 UNARY = {"usub", "uadd", "invert"}
 ADD = "add"
 SUB = "sub"
@@ -36,6 +35,35 @@ DIV = "div"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
 ASSIGN_OPERATORS = [ADD, SUB, DIV, MUL, MOD, BITOR, BITAND, BITXOR]
+# 4 sets below still need adaptation to vyper
+MATH_OPERATORS = {
+    "PLUS",
+    "MINUS",
+    "STAR",
+    "SLASH",
+    "VBAR",
+    "AMPER",
+    "PERCENT",
+    "CIRCUMFLEX",
+    "LEFTSHIFT",
+    "RIGHTSHIFT",
+    "DOUBLESTAR",
+    "DOUBLESLASH",
+}
+
+LOGIC_OPERATORS = {"_AND", "_OR"}
+
+COMPARATORS = {
+    "LESS",
+    "GREATER",
+    "EQEQUAL",
+    "NOTEQUAL",
+    "LESSEQUAL",
+    "GREATEREQUAL",
+}
+
+PRODUCT = "_PRODUCT"
+
 
 # Imports
 IMPORT_NAME = "_IMPORT"
