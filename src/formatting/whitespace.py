@@ -1,7 +1,7 @@
 from typing import Final
 from typing import Optional, TypeVar, Union
-from src.parsing import tokens
-from src.parsing.pytree import Node, Leaf
+from parsing import tokens
+from parsing.pytree import Node, Leaf
 
 T = TypeVar("T")
 LN = Union[Leaf, Node]
@@ -28,6 +28,9 @@ def whitespace(leaf: Leaf) -> str:
         return NO
 
     prev = leaf.prev_sibling
+
+    if not p:
+        return SPACE
 
     if p.type == tokens.DECORATOR:
         return NO

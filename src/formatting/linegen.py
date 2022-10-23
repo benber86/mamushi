@@ -11,9 +11,9 @@ from typing import (
 )
 from lark import Tree, Token
 from dataclasses import dataclass, field
-from src.parsing.pytree import Leaf, Node
-from src.formatting.lines import Line
-from src.parsing import tokens
+from parsing.pytree import Leaf, Node
+from formatting.lines import Line
+from parsing import tokens
 
 T = TypeVar("T")
 TT = Union[Tree, Token]

@@ -8,14 +8,14 @@ from typing import (
     Iterable,
 )
 
-from src.parsing import tokens
-from src.parsing.pytree import Leaf
-from src.formatting.whitespace import whitespace
+from parsing import tokens
+from parsing.pytree import Leaf
+from formatting.whitespace import whitespace
 
 LeafID = int
 Priority = int
 Depth = int
-NodeType = int
+NodeType = str
 COMPREHENSION_PRIORITY = 20
 COMMA_PRIORITY = 10
 LOGIC_PRIORITY = 5
@@ -273,8 +273,8 @@ def is_import(leaf: Leaf) -> bool:
     return bool(
         t == tokens.NAME
         and (
-            (v == "import" and p and p.type == tokens.import_name)
-            or (v == "from" and p and p.type == tokens.import_from)
+            (v == "import" and p and p.type == "import_name")
+            or (v == "from" and p and p.type == "import_from")
         )
     )
 

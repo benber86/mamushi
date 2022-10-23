@@ -4,8 +4,8 @@
 from lark import Lark, Tree
 from lark.indenter import Indenter
 
-from src.parsing.pytree import Leaf, Node
-from src.parsing.tokens import (
+from parsing.pytree import Leaf, Node
+from parsing.tokens import (
     OPENING_BRACKETS,
     CLOSING_BRACKETS,
     NEWLINE,
@@ -30,9 +30,9 @@ def vyper_grammar():
     global _lark_grammar
     if _lark_grammar is None:
         _lark_grammar = Lark.open_from_package(
-            "src",
+            "parsing",
             "grammar.lark",
-            ("tree/",),
+            ("/",),
             parser="lalr",
             start="module",
             postlex=PythonIndenter(),

@@ -1,6 +1,6 @@
-from src.formatting.linegen import LineGenerator, EmptyLineTracker
-from src.formatting.lines import Line, split_line
-from src.parsing.pytree import Node
+from formatting.linegen import LineGenerator, EmptyLineTracker
+from formatting.lines import Line, split_line
+from parsing.pytree import Node
 from typing import List
 
 
