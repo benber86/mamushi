@@ -34,7 +34,6 @@ def main(
     sources: List[Path] = []
     if not src:
         src = [str(Path.cwd().resolve())]
-    print("PAHT", src)
     for s in src:
         p = Path(s)
         if p.is_dir():
