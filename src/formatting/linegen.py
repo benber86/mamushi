@@ -69,8 +69,9 @@ class LineGenerator(Visitor[Line]):
     in ways that will no longer stringify to valid Python code on the tree.
     """
 
-    current_line: Line = field(default_factory=Line)
-    standalone_comments: List[Leaf] = field(default_factory=list)
+    def __init__(self) -> None:
+        self.current_line: Line
+        self.__post_init__()
 
     def line(self, indent: int = 0) -> Iterator[Line]:
         """Generate a line.
@@ -164,8 +165,9 @@ class LineGenerator(Visitor[Line]):
             yield from self.line()
             yield from self.visit(child)
 
-    def __attrs_post_init__(self) -> None:
+    def __post_init__(self) -> None:
         """You are in a twisty little maze of passages."""
+        self.current_line = Line()
         v = self.visit_stmt
         self.visit_if_stmt = partial(v, keywords={"if", "else", "elif"})
         self.visit_for_stmt = partial(v, keywords={"for", "else"})
