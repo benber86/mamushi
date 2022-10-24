@@ -37,6 +37,7 @@ def vyper_grammar():
             start="module",
             postlex=PythonIndenter(),
             keep_all_tokens=True,
+            maybe_placeholders=False
         )
     return _lark_grammar
 
