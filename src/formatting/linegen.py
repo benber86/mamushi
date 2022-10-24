@@ -146,10 +146,7 @@ class LineGenerator(Visitor[Line]):
 
     def visit_simple_stmt(self, node: Node) -> Iterator[Line]:
         """A statement without nested statements."""
-        is_body_like = node.parent and node.parent.type not in {
-            tokens.MODULE,
-            tokens.BODY,
-        }
+        is_body_like = node.parent and node.parent.type not in tokens.BODIES
         if is_body_like:
             yield from self.line(+1)
             yield from self.visit_default(node)
