@@ -84,7 +84,10 @@ DECLARATIONS = {
     "_INTERFACE_DECL",
 }
 BODY = "body"
+EVENT_BODY = "event_body"
+ENUM_BODY = "enum_body"
 MODULE = "module"
+BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE}
 DEF_SUFFIX = "_def"
 RETURN_TYPE = "_RETURN_TYPE"
 FUNCTION_SIG = "function_sig"
