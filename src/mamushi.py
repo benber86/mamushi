@@ -51,8 +51,6 @@ def main(
         if in_place:
             with open(source, "w") as fp:
                 fp.write(res)
-        print(res)
-        ctx.exit(0)
 
 
 if __name__ == "__main__":
