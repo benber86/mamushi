@@ -3,7 +3,7 @@
 
 from lark import Lark, Tree
 from lark.indenter import Indenter
-
+import re
 from parsing.pytree import Leaf, Node
 from parsing.tokens import (
     OPENING_BRACKETS,
@@ -37,7 +37,7 @@ def vyper_grammar():
             start="module",
             postlex=PythonIndenter(),
             keep_all_tokens=True,
-            maybe_placeholders=False
+            maybe_placeholders=False,
         )
     return _lark_grammar
 
@@ -74,4 +74,6 @@ def _to_pytree(lark_tree: Tree) -> Node:
 
 
 def parse_string(code: str) -> Node:
+    # remove whitespace on empty lines
+    code = re.sub(r"[ |\t]+\n", "\n", code, re.MULTILINE)
     return _to_pytree(vyper_grammar().parse(code + "\n"))
