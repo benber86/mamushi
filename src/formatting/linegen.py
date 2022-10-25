@@ -119,7 +119,7 @@ class LineGenerator(Visitor[Line]):
         Handles calls depending on whether they're a standalone statement
         or part of a compound statement
         """
-        if not node.parent or node.parent and node.parent.type == tokens.BODIES:
+        if not node.parent or node.parent and node.parent.type == tokens.BODY:
             yield from self.line()
             yield from self.visit_default(node)
         else:
