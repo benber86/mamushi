@@ -88,8 +88,14 @@ class LineGenerator(Visitor[Line]):
         yield complete_line
 
     def visit_default(self, node: LN) -> Iterator[Line]:
-        if isinstance(node, Leaf) and node.type not in tokens.WHITESPACE:
-            self.current_line.append(node)
+        if isinstance(node, Leaf):
+            if node.type not in tokens.WHITESPACE:
+                self.current_line.append(node)
+            if node.type == tokens.NEWLINE and node.value.count("\n") > 1:
+                # handle user inserted multiple blank lines
+                nextl = next_leaf(node)
+                if nextl:
+                    nextl.prefix = "\n" + nextl.prefix
         yield from super().visit_default(node)
 
     def visit__INDENT(self, node: Leaf) -> Iterator[Line]:
@@ -235,3 +241,21 @@ class EmptyLineTracker:
             return (before or 1), 0
 
         return before, 0
+
+
+def next_leaf(node: Optional[LN]) -> Optional[Leaf]:
+    """Return the first leaf that precedes `node`, if any."""
+    while node:
+        res = node.next_sibling
+        if res:
+            if isinstance(res, Leaf):
+                return res
+
+            try:
+                return list(res.leaves())[0]
+
+            except IndexError:
+                return None
+
+        node = node.parent
+    return None
