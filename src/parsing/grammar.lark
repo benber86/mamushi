@@ -309,5 +309,4 @@ BOOL.2: "True" | "False"
 
 %ignore /[\t \f]+/  // WS
 %ignore /\\[\t \f]*\r?\n/   // LINE_CONT
-%ignore COMMENT
 %declare _INDENT _DEDENT

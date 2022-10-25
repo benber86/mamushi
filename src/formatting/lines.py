@@ -111,10 +111,6 @@ class Line:
             self.leaves.append(leaf)
 
     @property
-    def is_comment(self) -> bool:
-        return bool(self) and self.leaves[0].type == tokens.STANDALONE_COMMENT
-
-    @property
     def is_decorator(self) -> bool:
         return bool(self) and self.leaves[0].type == tokens.AT
 

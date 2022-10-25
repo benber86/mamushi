@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from parsing.pytree import Leaf, Node
 from formatting.lines import Line
 from parsing import tokens
+import re
 
 T = TypeVar("T")
 TT = Union[Tree, Token]
@@ -88,14 +89,28 @@ class LineGenerator(Visitor[Line]):
         yield complete_line
 
     def visit_default(self, node: LN) -> Iterator[Line]:
-        if isinstance(node, Leaf):
-            if node.type not in tokens.WHITESPACE:
-                self.current_line.append(node)
-            if node.type == tokens.NEWLINE and node.value.count("\n") > 1:
-                # handle user inserted multiple blank lines
-                nextl = next_leaf(node)
-                if nextl:
-                    nextl.prefix = "\n" + nextl.prefix
+        if isinstance(node, Leaf) and node.type not in tokens.WHITESPACE:
+            self.current_line.append(node)
+        yield from super().visit_default(node)
+
+    def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
+        comments = re.findall(r"#[^\n]*", node.value)
+        if comments:
+            for comment in comments:
+                if node.value.strip(" \t").startswith(comment):
+                    leaf = Leaf(value=comment, type=tokens.COMMENT)
+                    self.current_line.append(leaf)
+
+                else:
+                    yield from self.line()
+                    leaf = Leaf(value=comment, type=tokens.STANDALONE_COMMENT)
+                    self.current_line.append(leaf)
+
+        if node.value.strip(" \t").endswith("\n\n"):
+            # handle user inserted multiple blank lines
+            nextl = next_leaf(node)
+            if nextl:
+                nextl.prefix = "\n" + nextl.prefix
         yield from super().visit_default(node)
 
     def visit__INDENT(self, node: Leaf) -> Iterator[Line]:
