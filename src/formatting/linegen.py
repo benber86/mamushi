@@ -93,9 +93,15 @@ class LineGenerator(Visitor[Line]):
             self.current_line.append(node)
         yield from super().visit_default(node)
 
+    def visit_DOCSTRINGS(self, node: Leaf) -> Iterator[Line]:
+        pass
+
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
         # comments are parsed along with new lines
         # we break them down here
+        if not node.value.strip():
+            yield from super().visit_default(node)
+
         comments = re.findall(r"#[^\n]*", node.value)
         if comments:
             for comment in comments:
