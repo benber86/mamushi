@@ -94,20 +94,24 @@ class LineGenerator(Visitor[Line]):
         yield from super().visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
+        # comments are parsed along with new lines
+        # we break them down here
         comments = re.findall(r"#[^\n]*", node.value)
         if comments:
             for comment in comments:
                 if node.value.strip(" \t").startswith(comment):
+                    # if no new line, comment is attached to line
                     leaf = Leaf(value=comment, type=tokens.COMMENT)
                     self.current_line.append(leaf)
 
                 else:
+                    # else we have a standalone comment
                     yield from self.line()
                     leaf = Leaf(value=comment, type=tokens.STANDALONE_COMMENT)
                     self.current_line.append(leaf)
 
         if node.value.strip(" \t").endswith("\n\n"):
-            # handle user inserted multiple blank lines
+            # If user inserted multiple blank lines, we reduce to 1
             nextl = next_leaf(node)
             if nextl:
                 nextl.prefix = "\n" + nextl.prefix
