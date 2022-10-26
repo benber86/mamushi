@@ -11,6 +11,12 @@ from typing import (
 )
 from lark import Tree, Token
 from dataclasses import dataclass, field
+
+from formatting.strings import (
+    normalize_string_quotes,
+    is_multiline_string,
+    fix_docstring,
+)
 from parsing.pytree import Leaf, Node
 from formatting.lines import Line
 from parsing import tokens
@@ -70,9 +76,10 @@ class LineGenerator(Visitor[Line]):
     in ways that will no longer stringify to valid Python code on the tree.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, line_length: int = 80) -> None:
         self.current_line: Line
         self.__post_init__()
+        self.line_length = line_length
 
     def line(self, indent: int = 0) -> Iterator[Line]:
         """Generate a line.
@@ -93,15 +100,78 @@ class LineGenerator(Visitor[Line]):
             self.current_line.append(node)
         yield from super().visit_default(node)
 
-    def visit_DOCSTRINGS(self, node: Leaf) -> Iterator[Line]:
-        pass
+    def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
+        # don't format header docstrings
+        if node.parent and node.parent.type != tokens.MODULE:
+            docstring = normalize_string_quotes(node.value)
+
+            quote_char = docstring[0]
+            # A natural way to remove the outer quotes is to do:
+            #   docstring = docstring.strip(quote_char)
+            # but that breaks on """""x""" (which is '""x').
+            # So we actually need to remove the first character and the next two
+            # characters but only if they are the same as the first.
+            quote_len = 1 if docstring[1] != quote_char else 3
+            docstring = docstring[quote_len:-quote_len]
+            docstring_started_empty = not docstring
+            indent = " " * 4 * self.current_line.depth
+
+            if is_multiline_string(node):
+                docstring = fix_docstring(docstring, indent)
+            else:
+                docstring = docstring.strip()
+
+            if docstring:
+                # Add some padding if the docstring starts / ends with a quote mark.
+                if docstring[0] == quote_char:
+                    docstring = " " + docstring
+                if docstring[-1] == quote_char:
+                    docstring += " "
+                if docstring[-1] == "\\":
+                    backslash_count = len(docstring) - len(
+                        docstring.rstrip("\\")
+                    )
+                    if backslash_count % 2:
+                        # Odd number of tailing backslashes, add some padding to
+                        # avoid escaping the closing string quote.
+                        docstring += " "
+            elif not docstring_started_empty:
+                docstring = " "
+
+            # We could enforce triple quotes at this point.
+            quote = quote_char * quote_len
+            if quote_len == 3:
+                # We need to find the length of the last line of the docstring
+                # to find if we can add the closing quotes to the line without
+                # exceeding the maximum line length.
+                # If docstring is one line, then we need to add the length
+                # of the indent, prefix, and starting quotes. Ending quotes are
+                # handled later.
+                lines = docstring.splitlines()
+                last_line_length = len(lines[-1]) if docstring else 0
+
+                if len(lines) == 1:
+                    last_line_length += len(indent) + quote_len
+
+                # If adding closing quotes would cause the last line to exceed
+                # the maximum line length then put a line break before the
+                # closing quotes
+                if last_line_length + quote_len > self.line_length:
+                    node.value = quote + docstring + "\n" + indent + quote
+                else:
+                    node.value = quote + docstring + quote
+            else:
+                node.value = quote + docstring + quote
+
+        yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
-        # comments are parsed along with new lines
-        # we break them down here
+        # if no content we can yield
         if not node.value.strip():
             yield from super().visit_default(node)
 
+        # comments are parsed along with new lines
+        # we break them down here
         comments = re.findall(r"#[^\n]*", node.value)
         if comments:
             for comment in comments:

@@ -4,7 +4,7 @@ from parsing.pytree import Node
 
 
 def format_tree(ast: Node, max_line_length: int = 80) -> str:
-    lg = LineGenerator()
+    lg = LineGenerator(max_line_length)
     elt = EmptyLineTracker()
     empty_line = Line()
     after = 0
