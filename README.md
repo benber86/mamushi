@@ -1,7 +1,5 @@
 # Mamushi
 
----
-
 Mamushi is a fork of the popular [Black](https://github.com/psf/black) formatter adapted to the [Vyper](https://github.com/vyperlang/vyper/) programming language. Mamushi reformats your Vyper contracts in a readable and consistent way.
 
 
