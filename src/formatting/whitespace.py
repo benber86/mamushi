@@ -17,16 +17,20 @@ def whitespace(leaf: Leaf) -> str:
     """
     Handle adding whitespace or not before tokens
     Adapted from black
-    TODO: complexity > 15, needs to be refactored
+    TODO: complexity too high, needs to be refactored
     """
     NO: Final = ""
     SPACE: Final = " "
+    DOUBLESPACE: Final = "  "
     t = leaf.type
     p = leaf.parent
     v = leaf.value
 
     if t in ALWAYS_NO_SPACE:
         return NO
+
+    if t == tokens.COMMENT:
+        return DOUBLESPACE
 
     prev = leaf.prev_sibling
 
