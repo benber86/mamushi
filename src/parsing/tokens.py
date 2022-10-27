@@ -99,7 +99,7 @@ GET_ITEM = "get_item"
 VAR_GETTER = "variable_with_getter"
 INDEXED_ARGS = "indexed_event_arg"
 
-
+PRAGMA = "PRAGMA"
 COMMENT = "COMMENT"
 STRING = "STRING"
 DOCSTRING = "DOCSTRING"

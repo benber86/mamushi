@@ -9,6 +9,7 @@ ALWAYS_NO_SPACE: Final = tokens.CLOSING_BRACKETS | {
     tokens.COMMA,
     tokens.COLON,
     tokens.STANDALONE_COMMENT,
+    tokens.DOCSTRING,
 }
 
 

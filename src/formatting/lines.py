@@ -127,6 +127,14 @@ class Line:
         )
 
     @property
+    def is_pragma(self) -> bool:
+        try:
+            first_leaf = self.leaves[0]
+        except IndexError:
+            return False
+        return first_leaf.type == tokens.PRAGMA
+
+    @property
     def is_def(self) -> bool:
         try:
             first_leaf = self.leaves[0]

@@ -16,6 +16,8 @@ from formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
     fix_docstring,
+    is_pragma,
+    remove_double_spaces,
 )
 from parsing.pytree import Leaf, Node
 from formatting.lines import Line
@@ -174,19 +176,33 @@ class LineGenerator(Visitor[Line]):
 
         # comments are parsed along with new lines
         # we break them down here
-        comments = re.findall(r"#[^\n]*", node.value)
+        comments = re.findall(r"\s*#[^\n]*", node.value)
         if comments:
             for comment in comments:
-                if node.value.strip(" \t").startswith(comment):
-                    # if no new line, comment is attached to line
-                    leaf = Leaf(value=comment, type=tokens.COMMENT)
+                if comment.startswith("\n"):
+                    # if the line starts with a new line, it's a standalone comment
+                    yield from self.line()
+                    leaf = Leaf(
+                        value=comment.strip(), type=tokens.STANDALONE_COMMENT
+                    )
                     self.current_line.append(leaf)
 
-                else:
-                    # else we have a standalone comment
+                elif is_pragma(comment) and (
+                    node.prev_sibling is None
+                    and node.parent
+                    and node.parent.type == tokens.MODULE
+                ):
+                    self.current_line.append(
+                        Leaf(
+                            value=remove_double_spaces(comment),
+                            type=tokens.PRAGMA,
+                        )
+                    )
                     yield from self.line()
-                    leaf = Leaf(value=comment, type=tokens.STANDALONE_COMMENT)
-                    self.current_line.append(leaf)
+                else:
+                    self.current_line.append(
+                        Leaf(value=comment, type=tokens.COMMENT)
+                    )
 
         if node.value.strip(" \t").endswith("\n\n"):
             # If user inserted multiple blank lines, we reduce to 1
@@ -325,6 +341,9 @@ class EmptyLineTracker:
 
         if current_line.is_flow_control:
             return before, 1
+
+        if current_line.is_pragma:
+            return 0, 1
 
         if (
             self.previous_line

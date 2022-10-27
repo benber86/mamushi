@@ -166,3 +166,12 @@ def normalize_string_quotes(s: str) -> str:
         return s  # Prefer double quotes
 
     return f"{prefix}{new_quote}{new_body}{new_quote}"
+
+
+def is_pragma(string: str) -> bool:
+    version = re.match(r"#\s*@version\s*(\d\.?)*", string)
+    return (version is not None) and (version.string == string.strip())
+
+
+def remove_double_spaces(string: str) -> str:
+    return re.sub(r"\s+", " ", string)
