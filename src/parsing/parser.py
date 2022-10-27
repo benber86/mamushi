@@ -1,5 +1,6 @@
 # EXPERIMENTAL VYPER PARSER
 # https://github.com/vyperlang/vyper/
+from typing import Any, Dict
 
 from lark import Lark, Tree
 from lark.indenter import Indenter
@@ -23,23 +24,32 @@ class PythonIndenter(Indenter):
     tab_len = 4
 
 
-_lark_grammar = None
+_grammars: Dict[str, Any] = {}
 
 
-def vyper_grammar():
-    global _lark_grammar
-    if _lark_grammar is None:
-        _lark_grammar = Lark.open_from_package(
-            "parsing",
-            "grammar.lark",
-            ("/",),
-            parser="lalr",
-            start="module",
-            postlex=PythonIndenter(),
-            keep_all_tokens=True,
-            maybe_placeholders=False,
-        )
-    return _lark_grammar
+def _get_grammar(tokens=True):
+    return Lark.open_from_package(
+        "parsing",
+        "grammar.lark",
+        ("/",),
+        parser="lalr",
+        start="module",
+        postlex=PythonIndenter(),
+        keep_all_tokens=tokens,
+        maybe_placeholders=False,
+    )
+
+
+def vyper_grammar(tokens=True):
+    global _grammars
+    if tokens:
+        if not _grammars.get("tokens", None):
+            _grammars["tokens"] = _get_grammar(True)
+        return _grammars["tokens"]
+    else:
+        if not _grammars.get("tokenless", None):
+            _grammars["tokenless"] = _get_grammar(False)
+        return _grammars["tokenless"]
 
 
 def _to_pytree(lark_tree: Tree) -> Node:

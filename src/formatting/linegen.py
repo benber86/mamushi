@@ -235,10 +235,7 @@ class LineGenerator(Visitor[Line]):
             yield from self.visit(child)
 
     def visit_stmt(self, node: Node, keywords: Set[str]) -> Iterator[Line]:
-        """Visit a statement.
-        The relevant Python language keywords for this statement are NAME leaves
-        within it.
-        """
+        """Visit a statement."""
         for child in node.children:
             if child.type in ({tokens.NAME} | tokens.DECLARATIONS | STATEMENT_TYPES) and child.value in keywords:  # type: ignore
                 yield from self.line()
