@@ -178,12 +178,18 @@ class LineGenerator(Visitor[Line]):
         # we break them down here
         comments = re.findall(r"\s*#[^\n]*", node.value)
         if comments:
-            for comment in comments:
-                if comment.startswith("\n"):
+            for i, comment in enumerate(comments):
+                newlines = re.match(r"^\n*", comment)
+                multiple_newlines = newlines and newlines.span()[1] > 1
+                # add extra line return if multiplace blank lines
+                prefix = "\n" if multiple_newlines else ""
+                if newlines:
                     # if the line starts with a new line, it's a standalone comment
                     yield from self.line()
                     leaf = Leaf(
-                        value=comment.strip(), type=tokens.STANDALONE_COMMENT
+                        value=comment.strip(),
+                        type=tokens.STANDALONE_COMMENT,
+                        prefix=prefix,
                     )
                     self.current_line.append(leaf)
 

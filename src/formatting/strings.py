@@ -170,7 +170,7 @@ def normalize_string_quotes(s: str) -> str:
 
 def is_pragma(string: str) -> bool:
     version = re.match(r"#\s*@version\s*(\d\.?)*", string)
-    return (version is not None) and (version.string == string.strip())
+    return (version is not None) and (version.group(0) == string.strip())
 
 
 def remove_double_spaces(string: str) -> str:
