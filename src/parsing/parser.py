@@ -87,3 +87,7 @@ def parse_string(code: str) -> Node:
     # remove whitespace on empty lines
     code = re.sub(r"[ |\t]+\n", "\n", code, re.MULTILINE)
     return _to_pytree(vyper_grammar().parse(code + "\n"))
+
+
+def parse_string_to_tokenless_ast(code: str) -> Node:
+    return vyper_grammar(False).parse(code + "\n")
