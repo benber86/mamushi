@@ -101,9 +101,10 @@ class LineGenerator(Visitor[Line]):
         yield from super().visit_default(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
-        # don't format header docstrings
+        # ensure single/double quote consistency
+        docstring = normalize_string_quotes(node.value)
+        # don't further format header docstrings
         if node.parent and node.parent.type != tokens.MODULE:
-            docstring = normalize_string_quotes(node.value)
 
             quote_char = docstring[0]
             # A natural way to remove the outer quotes is to do:
@@ -162,7 +163,8 @@ class LineGenerator(Visitor[Line]):
                     node.value = quote + docstring + quote
             else:
                 node.value = quote + docstring + quote
-
+        else:
+            node.value = docstring
         yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
@@ -235,10 +237,7 @@ class LineGenerator(Visitor[Line]):
             yield from self.visit(child)
 
     def visit_stmt(self, node: Node, keywords: Set[str]) -> Iterator[Line]:
-        """Visit a statement.
-        The relevant Python language keywords for this statement are NAME leaves
-        within it.
-        """
+        """Visit a statement."""
         for child in node.children:
             if child.type in ({tokens.NAME} | tokens.DECLARATIONS | STATEMENT_TYPES) and child.value in keywords:  # type: ignore
                 yield from self.line()

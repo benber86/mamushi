@@ -99,7 +99,8 @@ GET_ITEM = "get_item"
 VAR_GETTER = "variable_with_getter"
 INDEXED_ARGS = "indexed_event_arg"
 
-# Needs cleanup
+
 COMMENT = "COMMENT"
 STRING = "STRING"
+DOCSTRING = "DOCSTRING"
 STANDALONE_COMMENT = "STANDALONE_COMMENT"
