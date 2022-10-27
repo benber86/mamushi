@@ -101,9 +101,10 @@ class LineGenerator(Visitor[Line]):
         yield from super().visit_default(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
-        # don't format header docstrings
+        # ensure single/double quote consistency
+        docstring = normalize_string_quotes(node.value)
+        # don't further format header docstrings
         if node.parent and node.parent.type != tokens.MODULE:
-            docstring = normalize_string_quotes(node.value)
 
             quote_char = docstring[0]
             # A natural way to remove the outer quotes is to do:
@@ -162,7 +163,8 @@ class LineGenerator(Visitor[Line]):
                     node.value = quote + docstring + quote
             else:
                 node.value = quote + docstring + quote
-
+        else:
+            node.value = docstring
         yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
