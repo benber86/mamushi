@@ -178,13 +178,32 @@ class LineGenerator(Visitor[Line]):
         # we break them down here
         comments = re.findall(r"\s*#[^\n]*", node.value)
         if comments:
+            dedent_processed = False
             for i, comment in enumerate(comments):
                 newlines = re.match(r"^\n*", comment)
                 line_count = 0 if not newlines else newlines.span()[1]
-                # add extra line return if multiplace blank lines
+                # if the line starts with a new line, it's a standalone comment
                 if line_count:
-                    # if the line starts with a new line, it's a standalone comment
+                    # we need to process potential dedentation/indentatino
+                    # if we haven't already and if there's more than 1 leading line return
                     yield from self.line()
+                    if not dedent_processed and line_count > 1:
+                        already_yielded = True
+                        # if the next sibling is a DEDENT, we have to preemptively and manually dedent
+                        # then remove the DEDENT node
+                        next_sibling = node.next_sibling
+                        while (
+                            next_sibling and next_sibling.type == tokens.DEDENT
+                        ):
+                            if (
+                                already_yielded
+                            ):  # we already yielded earlier, so skip on first run
+                                yield from self.line()
+                                already_yielded = False
+                            yield from self.line(-1)
+                            next_sibling.remove()
+                            next_sibling = node.next_sibling
+                        dedent_processed = True
                     leaf = Leaf(
                         value=comment.strip(),
                         type=tokens.STANDALONE_COMMENT,
