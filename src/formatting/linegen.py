@@ -180,16 +180,15 @@ class LineGenerator(Visitor[Line]):
         if comments:
             for i, comment in enumerate(comments):
                 newlines = re.match(r"^\n*", comment)
-                multiple_newlines = newlines and newlines.span()[1] > 1
+                line_count = 0 if not newlines else newlines.span()[1]
                 # add extra line return if multiplace blank lines
-                prefix = "\n" if multiple_newlines else ""
-                if newlines:
+                if line_count:
                     # if the line starts with a new line, it's a standalone comment
                     yield from self.line()
                     leaf = Leaf(
                         value=comment.strip(),
                         type=tokens.STANDALONE_COMMENT,
-                        prefix=prefix,
+                        prefix="\n" if line_count > 1 else "",
                     )
                     self.current_line.append(leaf)
 
@@ -313,12 +312,23 @@ class EmptyLineTracker:
         control keywords to make them more prominent.
         """
         before, after = self._maybe_empty_lines(current_line)
+        before = (
+            0 if self.previous_line is None else before - self.previous_after
+        )
         self.previous_after = after
         self.previous_line = current_line
         return before, after
 
     def _maybe_empty_lines(self, current_line: Line) -> Tuple[int, int]:
-        before = 0
+        max_allowed = 1
+        if current_line.leaves:
+            # Consume the first leaf's extra newlines.
+            first_leaf = current_line.leaves[0]
+            before = first_leaf.prefix.count("\n")
+            before = min(before, max_allowed)
+            first_leaf.prefix = ""
+        else:
+            before = 0
         depth = current_line.depth
         while self.previous_defs and self.previous_defs[-1] >= depth:
             self.previous_defs.pop()
@@ -327,9 +337,6 @@ class EmptyLineTracker:
         if is_decorator or current_line.is_def:
             if not is_decorator:
                 self.previous_defs.append(depth)
-            if self.previous_line is None:
-                # Don't insert empty lines before the first line in the file.
-                return 0, 0
 
             if self.previous_line and self.previous_line.is_decorator:
                 # Don't insert empty lines between decorators.
