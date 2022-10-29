@@ -8,6 +8,10 @@ from pathlib import Path
 import click
 
 
+def format_from_string(string: str, line_length: int = 80) -> str:
+    return format_tree(parse_string(string), line_length)
+
+
 @click.command()
 @click.option(
     "-l",
@@ -60,7 +64,7 @@ def main(
     for source in sources:
         with open(source, "r") as fp:
             contract = fp.read()
-        res = format_tree(parse_string(contract), line_length)
+        res = format_from_string(contract)
         if safe and not compare_ast(contract, res):
             raise AssertionError("Formatting changed the AST, aborting")
         if in_place:
