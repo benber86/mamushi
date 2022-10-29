@@ -1,5 +1,7 @@
 # Mamushi
 
+[![Build Status](https://github.com/benber86/mamushi/actions/workflows/test.yml/badge.svg)](https://github.com/benber86/mamushi/actions)
+
 Mamushi is a fork of the popular [Black](https://github.com/psf/black) formatter adapted to the [Vyper](https://github.com/vyperlang/vyper/) programming language. Mamushi reformats your Vyper contracts in a readable and consistent way.
 
 
