@@ -3,7 +3,7 @@ import pytest
 from mamushi import format_from_string
 
 
-@pytest.mark.parametrize("case_file", all_data_cases("comments"))
-def test_format_comments(case_file: str):
-    source, expected = read_data("comments", case_file)
+@pytest.mark.parametrize("case", all_data_cases("comments"))
+def test_format_comments(case: str):
+    source, expected = read_data("comments", case)
     assert format_from_string(source) == expected
