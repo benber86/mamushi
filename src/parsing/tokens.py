@@ -96,8 +96,10 @@ EMPTY = "empty"
 GET_ATTR = "get_attr"
 LOG_STMT = "log_stmt"
 GET_ITEM = "get_item"
-VAR_GETTER = "variable_with_getter"
+GETTER_SUFIX = "_with_getter"
+CONSTANT = "constant"
 INDEXED_ARGS = "indexed_event_arg"
+
 
 PRAGMA = "PRAGMA"
 COMMENT = "COMMENT"

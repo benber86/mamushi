@@ -65,15 +65,20 @@ def whitespace(leaf: Leaf) -> str:
         if t == tokens.DOT or prev.type == tokens.DOT:
             return NO
 
-    elif p.type.endswith(tokens.DEF_SUFFIX) or p.type in [
-        tokens.FUNCTION_SIG,
-        tokens.CALL,
-        tokens.EMPTY,
-        tokens.GET_ITEM,
-        tokens.VAR_GETTER,
-        tokens.INDEXED_ARGS,
-        tokens.LOG_STMT,
-    ]:
+    elif (
+        p.type.endswith(tokens.DEF_SUFFIX)
+        or p.type.endswith(tokens.GETTER_SUFIX)
+        or p.type
+        in {
+            tokens.FUNCTION_SIG,
+            tokens.CALL,
+            tokens.EMPTY,
+            tokens.GET_ITEM,
+            tokens.INDEXED_ARGS,
+            tokens.LOG_STMT,
+            tokens.CONSTANT,
+        }
+    ):
         # parentheses on calls, function sigs, logs and defs
         # except for returns
         if t == tokens.LPAR and prev.type != tokens.RETURN_TYPE:
