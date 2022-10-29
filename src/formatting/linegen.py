@@ -235,6 +235,8 @@ class LineGenerator(Visitor[Line]):
             nextl = next_leaf(node)
             if nextl:
                 nextl.prefix = "\n" + nextl.prefix
+            else:
+                yield from self.line()
         yield from super().visit_default(node)
 
     def visit__INDENT(self, node: Leaf) -> Iterator[Line]:
