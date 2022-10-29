@@ -12,6 +12,7 @@ from typing import (
 from lark import Tree, Token
 from dataclasses import dataclass, field
 
+from formatting.comments import add_leading_space_after_hashtag
 from formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
@@ -180,6 +181,7 @@ class LineGenerator(Visitor[Line]):
         if comments:
             dedent_processed = False
             for i, comment in enumerate(comments):
+                comment = add_leading_space_after_hashtag(comment)
                 newlines = re.match(r"^\n*", comment)
                 line_count = 0 if not newlines else newlines.span()[1]
                 # if the line starts with a new line, it's a standalone comment
