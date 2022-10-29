@@ -17,8 +17,8 @@ from parsing.tokens import (
 
 class PythonIndenter(Indenter):
     NL_type = NEWLINE
-    OPEN_PAREN_types = OPENING_BRACKETS
-    CLOSE_PAREN_types = CLOSING_BRACKETS
+    OPEN_PAREN_types = list(OPENING_BRACKETS)
+    CLOSE_PAREN_types = list(CLOSING_BRACKETS)
     INDENT_type = INDENT
     DEDENT_type = DEDENT
     tab_len = 4
@@ -89,5 +89,5 @@ def parse_string(code: str) -> Node:
     return _to_pytree(vyper_grammar().parse(code + "\n"))
 
 
-def parse_string_to_tokenless_ast(code: str) -> Node:
+def parse_string_to_tokenless_ast(code: str) -> Tree:
     return vyper_grammar(False).parse(code + "\n")
