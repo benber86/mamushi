@@ -30,7 +30,7 @@ def format_from_string(string: str, line_length: int = 80) -> str:
 )
 @click.option(
     "--safe",
-    is_flag=True,
+    type=bool,
     default=True,
     show_default=True,
     help="Compares input and output AST to ensure similarity",

@@ -13,6 +13,7 @@ from lark import Tree, Token
 from dataclasses import dataclass, field
 
 from formatting.comments import add_leading_space_after_hashtag
+from formatting.nodes import wrap_in_parentheses, is_atom_with_invisible_parens
 from formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
@@ -31,7 +32,7 @@ LN = Union[Leaf, Node]
 
 IMPORTS_TYPE = {tokens.IMPORT_FROM, tokens.IMPORT_NAME}
 
-STATEMENT_TYPES = {"FOR", "IF", "ELSE", "ELIF", "WHILE"}
+STATEMENT_TYPES = {tokens.FOR, tokens.IF, tokens.ELSE, tokens.ELIF}
 
 SIMPLE_STATEMENTS = {
     "variable_def",
@@ -235,6 +236,8 @@ class LineGenerator(Visitor[Line]):
             nextl = next_leaf(node)
             if nextl:
                 nextl.prefix = "\n" + nextl.prefix
+            else:
+                yield from self.line()
         yield from super().visit_default(node)
 
     def visit__INDENT(self, node: Leaf) -> Iterator[Line]:
@@ -278,8 +281,11 @@ class LineGenerator(Visitor[Line]):
                 yield from self.line()
             yield from self.visit(child)
 
-    def visit_stmt(self, node: Node, keywords: Set[str]) -> Iterator[Line]:
+    def visit_stmt(
+        self, node: Node, keywords: Set[str], parens: Set[str]
+    ) -> Iterator[Line]:
         """Visit a statement."""
+        normalize_invisible_parens(node, parens_after=parens)
         for child in node.children:
             if child.type in ({tokens.NAME} | tokens.DECLARATIONS | STATEMENT_TYPES) and child.value in keywords:  # type: ignore
                 yield from self.line()
@@ -308,9 +314,13 @@ class LineGenerator(Visitor[Line]):
         """You are in a twisty little maze of passages."""
         self.current_line = Line()
         v = self.visit_stmt
-        self.visit_if_stmt = partial(v, keywords={"if", "else", "elif"})
-        self.visit_for_stmt = partial(v, keywords={"for", "else"})
-        self.visit_function_sig = partial(v, keywords={"def"})
+        self.visit_if_stmt = partial(
+            v, keywords={"if", "else", "elif"}, parens={"if", "elif"}
+        )
+        self.visit_for_stmt = partial(
+            v, keywords={"for", "else"}, parens={"for"}
+        )
+        self.visit_function_sig = partial(v, keywords={"def"}, parens=set())
         for stmt in SIMPLE_STATEMENTS:
             self.__setattr__(f"visit_{stmt}", self.visit_simple_stmt)
 
@@ -406,3 +416,72 @@ def next_leaf(node: Optional[LN]) -> Optional[Leaf]:
 
         node = node.parent
     return None
+
+
+def normalize_invisible_parens(
+    node: Node,
+    parens_after: Set[str],
+) -> None:
+    """Make existing optional parentheses invisible or create new ones.
+
+    `parens_after` is a set of string leaf values immediately after which parens
+    should be put.
+
+    Standardizes on visible parentheses for single-element tuples, and keeps
+    existing visible parentheses for other tuples and generator expressions.
+    """
+
+    check_lpar = False
+    for index, child in enumerate(list(node.children)):
+        if check_lpar:
+            if child.type == tokens.COND_EXEC:
+                if maybe_make_parens_invisible_in_atom(
+                    child,
+                    parent=node,
+                ):
+                    wrap_in_parentheses(node, child, visible=False)
+
+            elif not (isinstance(child, Leaf) and is_multiline_string(child)):
+                wrap_in_parentheses(node, child, visible=False)
+
+        check_lpar = isinstance(child, Leaf) and (child.value in parens_after)
+
+
+def maybe_make_parens_invisible_in_atom(
+    node: LN,
+    parent: LN,
+    remove_brackets_around_comma: bool = False,
+) -> bool:
+    """If it's safe, make the parens in the atom `node` invisible, recursively.
+    Additionally, remove repeated, adjacent invisible parens from the atom `node`
+    as they are redundant.
+
+    Returns whether the node should itself be wrapped in invisible parentheses.
+    """
+
+    first = node.children[0]
+    last = node.children[-1]
+    if (
+        isinstance(first, Leaf)
+        and first == tokens.LPAR
+        and isinstance(last, Leaf)
+        and last == tokens.RPAR
+    ):
+        middle = node.children[1]
+        # make parentheses invisible
+        first.value = ""
+        last.value = ""
+        maybe_make_parens_invisible_in_atom(
+            middle,
+            parent=parent,
+            remove_brackets_around_comma=remove_brackets_around_comma,
+        )
+
+        if is_atom_with_invisible_parens(middle):
+            # Strip the invisible parens from `middle` by replacing
+            # it with the child in-between the invisible parens
+            middle.replace(middle.children[1])
+
+        return False
+
+    return True
