@@ -506,3 +506,11 @@ def is_delimiter(leaf: Leaf) -> int:
         return MATH_PRIORITY
 
     return 0
+
+
+def line_to_string(line: Line) -> str:
+    """Returns the string representation of @line.
+
+    WARNING: This is known to be computationally expensive.
+    """
+    return str(line).strip("\n")

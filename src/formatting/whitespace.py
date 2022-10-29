@@ -42,7 +42,11 @@ def whitespace(leaf: Leaf) -> str:
 
     if not prev:
         prevp = preceding_leaf(p)
-        if not prevp or prevp.type in tokens.OPENING_BRACKETS:
+        if (
+            not prevp
+            or prevp.type in tokens.OPENING_BRACKETS
+            and prevp.value != ""
+        ):
             return NO
 
     elif prev.type in tokens.OPENING_BRACKETS:
@@ -79,9 +83,9 @@ def whitespace(leaf: Leaf) -> str:
             tokens.CONSTANT,
         }
     ):
-        # parentheses on calls, function sigs, logs and defs
+        # no parentheses on calls, function sigs, logs and defs
         # except for returns
-        if t == tokens.LPAR and prev.type != tokens.RETURN_TYPE:
+        if t == tokens.LPAR and prev.type not in tokens.RETURN_TYPE:
             return NO
 
         if t == tokens.LSQB:
