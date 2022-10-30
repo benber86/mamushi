@@ -42,11 +42,7 @@ def whitespace(leaf: Leaf) -> str:
 
     if not prev:
         prevp = preceding_leaf(p)
-        if (
-            not prevp
-            or prevp.type in tokens.OPENING_BRACKETS
-            and prevp.value != ""
-        ):
+        if not prevp or prevp.type in tokens.OPENING_BRACKETS:
             return NO
 
     elif prev.type in tokens.OPENING_BRACKETS:

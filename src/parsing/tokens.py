@@ -9,10 +9,16 @@ COLON = "COLON"
 NAME = "NAME"
 RBRACE = "RBRACE"
 LBRACE = "LBRACE"
+DEC_NUMBER = "DEC_NUMBER"
+HEX_NUMBER = "HEX_NUMBER"
+BIN_NUMBER = "BIN_NUMBER"
+OCT_NUMBER = "OCT_NUMBER"
+NUMBERS = {DEC_NUMBER, HEX_NUMBER, BIN_NUMBER, OCT_NUMBER}
 AT = "AT"
 BRACKET_MAP = {LPAR: RPAR, LSQB: RSQB, LBRACE: RBRACE}
 OPENING_BRACKETS = set(BRACKET_MAP.keys())
 CLOSING_BRACKETS = set(BRACKET_MAP.values())
+BRACKETS = OPENING_BRACKETS | CLOSING_BRACKETS
 
 # Formatting
 INDENT = "_INDENT"
@@ -26,44 +32,48 @@ BITOR = "_BITOR"
 BITXOR = "_BITXOR"
 PLUS = "PLUS"
 MINUS = "MINUS"
+PRODUCT = "_PRODUCT"
+TILDE = "TILDE"
 UNARY = {"usub", "uadd", "invert"}
 ADD = "add"
 SUB = "sub"
 MUL = "mul"
 MOD = "mod"
 DIV = "div"
+POW = "pow"
+RIGHTSHIFT = "_SHR"
+LEFTSHIFT = "_SHL"
+DOUBLESTAR = "_POW"
+SLASH = "SLASH"
+STAR = "WILDCARD"
+PERCENT = "PERCENT"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
 ASSIGN_OPERATORS = [ADD, SUB, DIV, MUL, MOD, BITOR, BITAND, BITXOR]
-# 4 sets below still need adaptation to vyper
 MATH_OPERATORS = {
-    "PLUS",
-    "MINUS",
-    "STAR",
-    "SLASH",
-    "VBAR",
-    "AMPER",
-    "PERCENT",
-    "CIRCUMFLEX",
-    "LEFTSHIFT",
-    "RIGHTSHIFT",
-    "DOUBLESTAR",
-    "DOUBLESLASH",
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    BITOR,
+    BITAND,
+    BITXOR,
+    PERCENT,
+    LEFTSHIFT,
+    RIGHTSHIFT,
+    DOUBLESTAR,
 }
 
 LOGIC_OPERATORS = {"_AND", "_OR"}
 
 COMPARATORS = {
-    "LESS",
-    "GREATER",
-    "EQEQUAL",
-    "NOTEQUAL",
-    "LESSEQUAL",
-    "GREATEREQUAL",
+    "LESSTHAN",
+    "MORETHAN",
+    "_EQ",
+    "_NE",
+    "_LE",
+    "_GE",
 }
-
-PRODUCT = "_PRODUCT"
-
 
 # Imports
 IMPORT_NAME = "_IMPORT"
@@ -91,9 +101,12 @@ BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE}
 DEF_SUFFIX = "_def"
 RETURN_TYPE = "_RETURN_TYPE"
 FUNCTION_SIG = "function_sig"
+ARRAY_DEF = "array_def"
+DINARRAY_DEF = "dyn_array_def"
 CALL = "call"
 EMPTY = "empty"
 GET_ATTR = "get_attr"
+GET_VAR = "get_var"
 LOG_STMT = "log_stmt"
 GET_ITEM = "get_item"
 GETTER_SUFIX = "_with_getter"
@@ -103,8 +116,10 @@ ATOM = "atom"
 
 COND_EXEC = "cond_exec"
 FOR_STMT = "for_stmt"
+IF_STMT = "if_stmt"
 FOR = "FOR"
 IF = "IF"
+IN = "_IN"
 ELSE = "ELSE"
 ELIF = "ELIF"
 
@@ -113,3 +128,9 @@ COMMENT = "COMMENT"
 STRING = "STRING"
 DOCSTRING = "DOCSTRING"
 STANDALONE_COMMENT = "STANDALONE_COMMENT"
+
+ASSERT = "assert"
+ASSERT_TOKEN = "_ASSERT"
+ASSERT_WITH_REASON = "assert_with_reason"
+ASSERT_UNREACHABLE = "assert_unreachable"
+ASSERTS = {ASSERT, ASSERT_WITH_REASON, ASSERT_UNREACHABLE}

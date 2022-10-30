@@ -32,20 +32,24 @@ LN = Union[Leaf, Node]
 
 IMPORTS_TYPE = {tokens.IMPORT_FROM, tokens.IMPORT_NAME}
 
-STATEMENT_TYPES = {tokens.FOR, tokens.IF, tokens.ELSE, tokens.ELIF}
+STATEMENT_TYPES = {
+    tokens.FOR,
+    tokens.IF,
+    tokens.ELSE,
+    tokens.ELIF,
+    tokens.ASSERT_TOKEN,
+}
+
+ASSIGNMENTS = {"declaration", "assign", "aug_assign"}
+
+ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
 
 SIMPLE_STATEMENTS = {
     "variable_def",
-    "declaration",
-    "assign",
-    "aug_assign",
     "return_stmt",
     "pass_stmt",
     "break_stmt",
     "continue_stmt",
-    "assert",
-    "assert_with_reason",
-    "assert_unreachable",
     "raise_stmt",
     "log_stmt",
     "constant_def",
@@ -294,6 +298,9 @@ class LineGenerator(Visitor[Line]):
 
     def visit_simple_stmt(self, node: Node) -> Iterator[Line]:
         """A statement without nested statements."""
+        if node.type in ASSIGNMENTS:
+            normalize_invisible_parens(node, parens_after=ASSIGNMENTS_SIGNS)
+
         is_body_like = node.parent and node.parent.type not in tokens.BODIES
         if is_body_like:
             yield from self.line(+1)
@@ -321,7 +328,13 @@ class LineGenerator(Visitor[Line]):
             v, keywords={"for", "else"}, parens={"for"}
         )
         self.visit_function_sig = partial(v, keywords={"def"}, parens=set())
-        for stmt in SIMPLE_STATEMENTS:
+        for assertion in tokens.ASSERTS:
+            self.__setattr__(
+                f"visit_{assertion}",
+                partial(v, keywords={"assert"}, parens={"assert"}),
+            )
+
+        for stmt in SIMPLE_STATEMENTS | ASSIGNMENTS:
             self.__setattr__(f"visit_{stmt}", self.visit_simple_stmt)
 
 
@@ -435,13 +448,18 @@ def normalize_invisible_parens(
     for index, child in enumerate(list(node.children)):
         if check_lpar:
             if child.type == tokens.COND_EXEC:
-                if maybe_make_parens_invisible_in_atom(
-                    child,
-                    parent=node,
+                first_child = child.children[0]
+                if (
+                    isinstance(first_child, Node)
+                    and isinstance(child, Node)
+                    and maybe_make_parens_invisible_in_atom(
+                        child.children[0],
+                        parent=child,
+                    )
                 ):
-                    wrap_in_parentheses(node, child, visible=False)
+                    wrap_in_parentheses(child, first_child, visible=False)
 
-            elif not (isinstance(child, Leaf) and is_multiline_string(child)):
+            elif not (isinstance(child, Leaf)):
                 wrap_in_parentheses(node, child, visible=False)
 
         check_lpar = isinstance(child, Leaf) and (child.value in parens_after)
