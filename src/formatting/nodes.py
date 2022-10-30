@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List, Tuple
 
 from parsing import tokens
 from parsing.pytree import Leaf, Node
@@ -62,3 +62,57 @@ def ensure_visible(leaf: Leaf) -> None:
         leaf.value = "("
     elif leaf.type == tokens.RPAR:
         leaf.value = ")"
+
+
+def is_one_sequence_between(
+    opening: Leaf,
+    closing: Leaf,
+    leaves: List[Leaf],
+    brackets: Tuple[str, str] = (tokens.LPAR, tokens.RPAR),
+) -> bool:
+    """Return True if content between `opening` and `closing` is a one-sequence."""
+    if (opening.type, closing.type) != brackets:
+        return False
+
+    depth = closing.bracket_depth + 1
+    for _opening_index, leaf in enumerate(leaves):
+        if leaf is opening:
+            break
+
+    else:
+        raise LookupError("Opening paren not found in `leaves`")
+
+    commas = 0
+    _opening_index += 1
+    for leaf in leaves[_opening_index:]:
+        if leaf is closing:
+            break
+
+        bracket_depth = leaf.bracket_depth
+        if bracket_depth == depth and leaf.type == tokens.COMMA:
+            commas += 1
+            if leaf.parent and leaf.parent.type in {
+                tokens.ARGUMENTS,
+                tokens.PARAMETERS,
+            }:
+                commas += 1
+                break
+
+    return commas < 2
+
+
+def replace_child(old_child: LN, new_child: LN) -> None:
+    """
+    Side Effects:
+        * If @old_child.parent is set, replace @old_child with @new_child in
+        @old_child's underlying Node structure.
+            OR
+        * Otherwise, this function does nothing.
+    """
+    parent = old_child.parent
+    if not parent:
+        return
+
+    child_idx = old_child.remove()
+    if child_idx is not None:
+        parent.insert_child(child_idx, new_child)

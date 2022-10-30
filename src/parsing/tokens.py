@@ -32,6 +32,7 @@ BITOR = "_BITOR"
 BITXOR = "_BITXOR"
 PLUS = "PLUS"
 MINUS = "MINUS"
+PRODUCT = "_PRODUCT"
 TILDE = "TILDE"
 UNARY = {"usub", "uadd", "invert"}
 ADD = "add"
@@ -49,35 +50,30 @@ PERCENT = "PERCENT"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
 ASSIGN_OPERATORS = [ADD, SUB, DIV, MUL, MOD, BITOR, BITAND, BITXOR]
-# 4 sets below still need adaptation to vyper
 MATH_OPERATORS = {
-    "PLUS",
-    "MINUS",
-    "STAR",
-    "SLASH",
-    "VBAR",
-    "AMPER",
-    "PERCENT",
-    "CIRCUMFLEX",
-    "LEFTSHIFT",
-    "RIGHTSHIFT",
-    "DOUBLESTAR",
-    "DOUBLESLASH",
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    BITOR,
+    BITAND,
+    BITXOR,
+    PERCENT,
+    LEFTSHIFT,
+    RIGHTSHIFT,
+    DOUBLESTAR,
 }
 
 LOGIC_OPERATORS = {"_AND", "_OR"}
 
 COMPARATORS = {
-    "LESS",
-    "GREATER",
+    "LESSTHAN",
+    "MORETHAN",
     "EQEQUAL",
     "NOTEQUAL",
     "LESSEQUAL",
     "GREATEREQUAL",
 }
-
-PRODUCT = "_PRODUCT"
-
 
 # Imports
 IMPORT_NAME = "_IMPORT"
@@ -105,9 +101,12 @@ BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE}
 DEF_SUFFIX = "_def"
 RETURN_TYPE = "_RETURN_TYPE"
 FUNCTION_SIG = "function_sig"
+ARRAY_DEF = "array_def"
+DINARRAY_DEF = "dyn_array_def"
 CALL = "call"
 EMPTY = "empty"
 GET_ATTR = "get_attr"
+GET_VAR = "get_var"
 LOG_STMT = "log_stmt"
 GET_ITEM = "get_item"
 GETTER_SUFIX = "_with_getter"
@@ -129,3 +128,9 @@ COMMENT = "COMMENT"
 STRING = "STRING"
 DOCSTRING = "DOCSTRING"
 STANDALONE_COMMENT = "STANDALONE_COMMENT"
+
+ASSERT = "assert"
+ASSERT_TOKEN = "_ASSERT"
+ASSERT_WITH_REASON = "assert_with_reason"
+ASSERT_UNREACHABLE = "assert_unreachable"
+ASSERTS = {ASSERT, ASSERT_WITH_REASON, ASSERT_UNREACHABLE}
