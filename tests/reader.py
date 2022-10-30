@@ -8,6 +8,10 @@ def get_base_dir(data: bool) -> Path:
     return DATA_DIR if data else PROJECT_ROOT
 
 
+def all_data(data: bool = True) -> List[str]:
+    return [data_path.stem for data_path in get_base_dir(data).iterdir()]
+
+
 def all_data_cases(subdir_name: str, data: bool = True) -> List[str]:
     cases_dir = get_base_dir(data) / subdir_name
     assert cases_dir.is_dir()
