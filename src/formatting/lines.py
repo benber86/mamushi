@@ -8,6 +8,7 @@ from typing import (
     Iterable,
 )
 
+from formatting.brackets import BracketTracker
 from parsing import tokens
 from parsing.pytree import Leaf
 from formatting.whitespace import whitespace
@@ -22,66 +23,6 @@ LOGIC_PRIORITY = 5
 STRING_PRIORITY = 4
 COMPARATOR_PRIORITY = 3
 MATH_PRIORITY = 1
-
-
-@dataclass
-class BracketTracker:
-    depth: int = 0
-    bracket_match: Dict[Tuple[Depth, NodeType], Leaf] = field(
-        default_factory=dict
-    )
-    delimiters: Dict[LeafID, Priority] = field(default_factory=dict)
-    previous: Optional[Leaf] = None
-
-    def mark(self, leaf: Leaf) -> None:
-        if leaf.type == tokens.COMMENT:
-            return
-
-        if leaf.type in tokens.CLOSING_BRACKETS:
-            self.depth -= 1
-            opening_bracket = self.bracket_match.pop((self.depth, leaf.type))
-            leaf.opening_bracket = opening_bracket  # type: ignore
-        leaf.bracket_depth = self.depth  # type: ignore
-        if self.depth == 0:
-            delim = is_delimiter(leaf)
-            if delim:
-                self.delimiters[id(leaf)] = delim
-            elif self.previous is not None:
-                if (
-                    leaf.type == tokens.STRING
-                    and self.previous.type == tokens.STRING
-                ):
-                    self.delimiters[id(self.previous)] = STRING_PRIORITY
-                elif (
-                    leaf.type == tokens.NAME
-                    and leaf.value == "for"
-                    and leaf.parent  # and
-                    # leaf.parent.type in {syms.comp_for, syms.old_comp_for}
-                ):
-                    self.delimiters[id(self.previous)] = COMPREHENSION_PRIORITY
-                elif (
-                    leaf.type == tokens.NAME
-                    and leaf.value == "if"
-                    and leaf.parent  # and
-                    # leaf.parent.type in {syms.comp_if, syms.old_comp_if}
-                ):
-                    self.delimiters[id(self.previous)] = COMPREHENSION_PRIORITY
-        if leaf.type in tokens.OPENING_BRACKETS:
-            self.bracket_match[
-                self.depth, tokens.BRACKET_MAP[leaf.type]
-            ] = leaf
-            self.depth += 1
-        self.previous = leaf
-
-    def any_open_brackets(self) -> bool:
-        """Returns True if there is an yet unmatched open bracket on the line."""
-        return bool(self.bracket_match)
-
-    def max_priority(self, exclude: Iterable[LeafID] = ()) -> int:
-        """Returns the highest priority of a delimiter found on the line.
-        Values are consistent with what `is_delimiter()` returns.
-        """
-        return max(v for k, v in self.delimiters.items() if k not in exclude)
 
 
 @dataclass
@@ -455,7 +396,7 @@ def delimiter_split(line: Line) -> Iterator[Line]:
 
     delimiters = line.bracket_tracker.delimiters
     try:
-        delimiter_priority = line.bracket_tracker.max_priority(
+        delimiter_priority = line.bracket_tracker.max_delimiter_priority(
             exclude={id(last_leaf)}
         )
     except ValueError:
@@ -506,11 +447,3 @@ def is_delimiter(leaf: Leaf) -> int:
         return MATH_PRIORITY
 
     return 0
-
-
-def line_to_string(line: Line) -> str:
-    """Returns the string representation of @line.
-
-    WARNING: This is known to be computationally expensive.
-    """
-    return str(line).strip("\n")

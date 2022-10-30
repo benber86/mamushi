@@ -50,3 +50,15 @@ def is_empty_lpar(leaf: Leaf) -> bool:
 
 def is_empty_rpar(leaf: Leaf) -> bool:
     return leaf.type == tokens.RPAR and leaf.value == ""
+
+
+def ensure_visible(leaf: Leaf) -> None:
+    """Make sure parentheses are visible.
+
+    They could be invisible as part of some statements (see
+    :func:`normalize_invisible_parens` and :func:`visit_import_from`).
+    """
+    if leaf.type == tokens.LPAR:
+        leaf.value = "("
+    elif leaf.type == tokens.RPAR:
+        leaf.value = ")"
