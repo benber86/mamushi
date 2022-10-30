@@ -1,3 +1,6 @@
+![image](https://user-images.githubusercontent.com/25791237/198873887-f01f9f69-5a1d-4a5f-95cf-1f1d6dfb63fb.png)
+
+
 # Mamushi
 
 [![Build Status](https://github.com/benber86/mamushi/actions/workflows/test.yml/badge.svg)](https://github.com/benber86/mamushi/actions)
