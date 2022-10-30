@@ -69,10 +69,10 @@ LOGIC_OPERATORS = {"_AND", "_OR"}
 COMPARATORS = {
     "LESSTHAN",
     "MORETHAN",
-    "EQEQUAL",
-    "NOTEQUAL",
-    "LESSEQUAL",
-    "GREATEREQUAL",
+    "_EQ",
+    "_NE",
+    "_LE",
+    "_GE",
 }
 
 # Imports
