@@ -9,6 +9,6 @@ def foo():
         this_is_a_very_long_variable_which_will_force_a_delimiter_split,
         element,
         another,
-        more,
+        more
     ]
     b: uint256[4] = [1, 2, 3, 4]

@@ -1,14 +1,13 @@
 """Builds on top of nodes.py to track brackets."""
 
-import sys
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 from parsing import tokens
 from typing import Final
+from parsing.pytree import Leaf, Node
 
 
 # types
-from parsing.pytree import Leaf, Node
 
 LN = Union[Leaf, Node]
 Depth = int
@@ -17,9 +16,8 @@ NodeType = str
 Priority = int
 
 
-COMPREHENSION_PRIORITY: Final = 20
-COMMA_PRIORITY: Final = 18
-TERNARY_PRIORITY: Final = 16
+COMPREHENSION_PRIORITY: Final = 18
+COMMA_PRIORITY: Final = 16
 LOGIC_PRIORITY: Final = 14
 STRING_PRIORITY: Final = 12
 COMPARATOR_PRIORITY: Final = 10
