@@ -32,13 +32,13 @@ def whitespace(leaf: Leaf) -> str:
     if t == tokens.COMMENT:
         return DOUBLESPACE
 
-    prev = leaf.prev_sibling
-
     if not p:
         return SPACE
 
     if p.type == tokens.DECORATOR:
         return NO
+
+    prev = leaf.prev_sibling
 
     if not prev:
         prevp = preceding_leaf(p)
@@ -77,6 +77,7 @@ def whitespace(leaf: Leaf) -> str:
             tokens.INDEXED_ARGS,
             tokens.LOG_STMT,
             tokens.CONSTANT,
+            tokens.IMMUTABLE,
         }
     ):
         # no parentheses on calls, function sigs, logs and defs
