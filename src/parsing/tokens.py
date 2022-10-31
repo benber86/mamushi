@@ -111,6 +111,7 @@ LOG_STMT = "log_stmt"
 GET_ITEM = "get_item"
 GETTER_SUFIX = "_with_getter"
 CONSTANT = "constant"
+IMMUTABLE = "immutable"
 INDEXED_ARGS = "indexed_event_arg"
 ATOM = "atom"
 
