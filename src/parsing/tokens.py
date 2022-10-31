@@ -27,9 +27,12 @@ NEWLINE = "_NEWLINE"
 WHITESPACE = [INDENT, DEDENT, NEWLINE]
 
 # Operations
-BITAND = "_BITAND"
-BITOR = "_BITOR"
-BITXOR = "_BITXOR"
+AMPERSAND = "_BITAND"
+VBAR = "_BITOR"
+CARET = "_BITXOR"
+BITAND = "bitand"
+BITOR = "bitor"
+BITXOR = "bitxor"
 PLUS = "PLUS"
 MINUS = "MINUS"
 PRODUCT = "_PRODUCT"
@@ -41,6 +44,8 @@ MUL = "mul"
 MOD = "mod"
 DIV = "div"
 POW = "pow"
+SHL = "shl"
+SHR = "shr"
 RIGHTSHIFT = "_SHR"
 LEFTSHIFT = "_SHL"
 DOUBLESTAR = "_POW"
@@ -49,15 +54,28 @@ STAR = "WILDCARD"
 PERCENT = "PERCENT"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
-ASSIGN_OPERATORS = [ADD, SUB, DIV, MUL, MOD, BITOR, BITAND, BITXOR]
+AUG_ASSIGN = "aug_assign"
+ASSIGN_OPERATORS = [
+    ADD,
+    SUB,
+    DIV,
+    MUL,
+    MOD,
+    POW,
+    BITOR,
+    BITXOR,
+    BITAND,
+    SHR,
+    SHL,
+]
 MATH_OPERATORS = {
     PLUS,
     MINUS,
     STAR,
     SLASH,
-    BITOR,
-    BITAND,
-    BITXOR,
+    VBAR,
+    AMPERSAND,
+    CARET,
     PERCENT,
     LEFTSHIFT,
     RIGHTSHIFT,

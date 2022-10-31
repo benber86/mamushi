@@ -22,9 +22,9 @@ LOGIC_PRIORITY: Final = 14
 STRING_PRIORITY: Final = 12
 COMPARATOR_PRIORITY: Final = 10
 MATH_PRIORITIES: Final = {
-    tokens.BITOR: 9,
-    tokens.BITXOR: 8,
-    tokens.BITAND: 7,
+    tokens.VBAR: 9,
+    tokens.CARET: 8,
+    tokens.AMPERSAND: 7,
     tokens.LEFTSHIFT: 6,
     tokens.RIGHTSHIFT: 6,
     tokens.PLUS: 5,

@@ -1065,9 +1065,15 @@ def hug_power_op(line: Line) -> Iterator[Line]:
             new_leaf.prefix = ""
             should_hug = False
 
-        should_hug = (
-            0 < idx < len(line.leaves) - 1
-        ) and leaf.type == tokens.DOUBLESTAR
+        should_hug = (0 < idx < len(line.leaves) - 1) and (
+            leaf.type == tokens.DOUBLESTAR
+            # we don't want to hug if we're in x **= y
+            and bool(
+                leaf.parent
+                and leaf.parent.parent
+                and leaf.parent.parent.type != tokens.AUG_ASSIGN
+            )
+        )
         if should_hug:
             new_leaf.prefix = ""
 
