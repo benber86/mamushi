@@ -66,8 +66,6 @@ class Line:
         if not has_value:
             return
 
-        if tokens.COLON == leaf.type and self.is_class_paren_empty:
-            del self.leaves[-2:]
         if self.leaves and not preformatted:
             # Note: at this point leaf.prefix should be empty except for
             # imports, for which we only preserve newlines.
@@ -77,8 +75,7 @@ class Line:
             self.bracket_tracker.mark(leaf)
             if self.has_magic_trailing_comma(leaf):
                 self.remove_trailing_comma()
-        if not self.append_comment(leaf):
-            self.leaves.append(leaf)
+        self.leaves.append(leaf)
 
     def append_safe(self, leaf: Leaf, preformatted: bool = False) -> None:
         """Like :func:`append()` but disallow invalid standalone comment structure.
@@ -132,15 +129,6 @@ class Line:
         return first_leaf.type == tokens.PRAGMA
 
     @property
-    def is_class(self) -> bool:
-        """Is this line a class definition?"""
-        return (
-            bool(self)
-            and self.leaves[0].type == tokens.NAME
-            and self.leaves[0].value == "class"
-        )
-
-    @property
     def is_def(self) -> bool:
         try:
             first_leaf = self.leaves[0]
@@ -153,29 +141,6 @@ class Line:
             and first_leaf.parent.parent.type == tokens.INTERFACE_FUNCTION
         )
         return (first_leaf.type in tokens.DECLARATIONS) and not is_abi
-
-    @property
-    def is_class_paren_empty(self) -> bool:
-        """Is this a class with no base classes but using parentheses?
-
-        Those are unnecessary and should be removed.
-        """
-        return (
-            bool(self)
-            and len(self.leaves) == 4
-            and self.is_class
-            and self.leaves[2].type == tokens.LPAR
-            and self.leaves[2].value == "("
-            and self.leaves[3].type == tokens.RPAR
-            and self.leaves[3].value == ")"
-        )
-
-    @property
-    def opens_block(self) -> bool:
-        """Does this line open a new level of indentation."""
-        if len(self.leaves) == 0:
-            return False
-        return self.leaves[-1].type == tokens.COLON
 
     def contains_standalone_comments(
         self, depth_limit: int = sys.maxsize
@@ -225,43 +190,6 @@ class Line:
             return True
 
         return False
-
-    def append_comment(self, comment: Leaf) -> bool:
-        """Add an inline or standalone comment to the line."""
-        if (
-            comment.type == tokens.STANDALONE_COMMENT
-            and self.bracket_tracker.any_open_brackets()
-        ):
-            comment.prefix = ""
-            return False
-
-        if comment.type != tokens.COMMENT:
-            return False
-
-        if not self.leaves:
-            comment.type = tokens.STANDALONE_COMMENT
-            comment.prefix = ""
-            return False
-
-        last_leaf = self.leaves[-1]
-        if (
-            last_leaf.type == tokens.RPAR
-            and not last_leaf.value
-            and last_leaf.parent
-            and len(list(last_leaf.parent.leaves())) <= 3
-            and not is_type_comment(comment)
-        ):
-            # Comments on an optional parens wrapping a single leaf should belong to
-            # the wrapped node except if it's a type comment. Pinning the comment like
-            # this avoids unstable formatting caused by comment migration.
-            if len(self.leaves) < 2:
-                comment.type = tokens.STANDALONE_COMMENT
-                comment.prefix = ""
-                return False
-
-            last_leaf = self.leaves[-2]
-        self.comments.setdefault(id(last_leaf), []).append(comment)
-        return True
 
     def comments_after(self, leaf: Leaf) -> List[Leaf]:
         """Generate comments that should appear directly after `leaf`."""
