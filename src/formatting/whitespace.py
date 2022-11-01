@@ -44,6 +44,8 @@ def whitespace(leaf: Leaf) -> str:
         prevp = preceding_leaf(p)
         if not prevp or prevp.type in tokens.OPENING_BRACKETS:
             return NO
+        elif prevp and prevp.type == tokens.TILDE:
+            return NO
 
     elif prev.type in tokens.OPENING_BRACKETS:
         return NO
