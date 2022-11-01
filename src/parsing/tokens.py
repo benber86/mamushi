@@ -84,7 +84,10 @@ MATH_OPERATORS = {
     DOUBLESTAR,
 }
 
-LOGIC_OPERATORS = {"_AND", "_OR"}
+BOOL_OR = "_OR"
+BOOL_AND = "_AND"
+BOOL_NOT = "_NOT"
+LOGIC_OPERATORS = {BOOL_OR, BOOL_AND, BOOL_NOT}
 
 COMPARATORS = {
     "LESSTHAN",
@@ -103,6 +106,7 @@ IMPORT = "import"
 # Statements
 PARAMETERS = "parameters"
 ARGUMENTS = "arguments"
+KWARG = "kwarg"
 DECORATOR = "decorator"
 FLOW_CONTROL = {"return", "break", "continue"}
 INTERFACE_FUNCTION = "interface_function"
