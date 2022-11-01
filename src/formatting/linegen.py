@@ -447,6 +447,14 @@ def normalize_invisible_parens(
 
     check_lpar = False
     for index, child in enumerate(list(node.children)):
+        # Add parentheses around tuple assignments on lhs.
+        if (
+            index == 0
+            and isinstance(child, Node)
+            and child.type == tokens.MULTIPLE_ASSIGN
+        ):
+            check_lpar = True
+
         if check_lpar:
             if child.type == tokens.COND_EXEC:
                 first_child = child.children[0]

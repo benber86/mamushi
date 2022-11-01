@@ -55,6 +55,7 @@ PERCENT = "PERCENT"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
 AUG_ASSIGN = "aug_assign"
+MULTIPLE_ASSIGN = "multiple_assign"
 ASSIGN_OPERATORS = [
     ADD,
     SUB,
