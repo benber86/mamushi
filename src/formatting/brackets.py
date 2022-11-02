@@ -225,31 +225,3 @@ def is_split_before_delimiter(
         return LOGIC_PRIORITY
 
     return 0
-
-
-def max_delimiter_priority_in_atom(node: LN) -> Priority:
-    """Return maximum delimiter priority inside `node`.
-
-    This is specific to atoms with contents contained in a pair of parentheses.
-    If `node` isn't an atom or there are no enclosing parentheses, returns 0.
-    """
-    if node.type != tokens.ATOM:
-        return 0
-
-    first = node.children[0]
-    last = node.children[-1]
-    if not (first.type == tokens.LPAR and last.type == tokens.RPAR):
-        return 0
-
-    bt = BracketTracker()
-    for c in node.children[1:-1]:
-        if isinstance(c, Leaf):
-            bt.mark(c)
-        else:
-            for leaf in c.leaves():
-                bt.mark(leaf)
-    try:
-        return bt.max_delimiter_priority()
-
-    except ValueError:
-        return 0
