@@ -105,8 +105,11 @@ class LineGenerator(Visitor[Line]):
         yield complete_line
 
     def visit_default(self, node: LN) -> Iterator[Line]:
-        if isinstance(node, Leaf) and node.type not in tokens.WHITESPACE:
-            self.current_line.append(node)
+        if isinstance(node, Leaf):
+            if node.type == tokens.STRING:
+                node.value = normalize_string_quotes(node.value)
+            if node.type not in tokens.WHITESPACE:
+                self.current_line.append(node)
         yield from super().visit_default(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
