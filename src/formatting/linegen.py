@@ -40,7 +40,7 @@ STATEMENT_TYPES = {
     tokens.ASSERT_TOKEN,
 }
 
-ASSIGNMENTS = {"declaration", "assign", tokens.AUG_ASSIGN}
+ASSIGNMENTS = {"declaration", tokens.ASSIGN, tokens.AUG_ASSIGN}
 
 ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
 
@@ -63,7 +63,9 @@ SIMPLE_STATEMENTS = {
     "event_member",
     "enum_member",
     "struct_member",
-}
+    tokens.ASSIGN,
+    tokens.AUG_ASSIGN,
+} | tokens.ASSERTS
 
 
 class Visitor(Generic[T]):
@@ -304,8 +306,18 @@ class LineGenerator(Visitor[Line]):
         """A statement without nested statements."""
         if node.type in ASSIGNMENTS:
             normalize_invisible_parens(node, parens_after=ASSIGNMENTS_SIGNS)
-
-        is_body_like = node.parent and node.parent.type not in tokens.BODIES
+        if node.type in tokens.ASSERTS:
+            normalize_invisible_parens(node, parens_after={"assert", ","})
+        is_body_like = node.parent and (
+            # TODO: handle this more cleanly
+            node.parent.type not in tokens.BODIES
+            # for single line body stmts
+            or (
+                node.parent.type == tokens.BODY
+                and node.type in SIMPLE_STATEMENTS
+                and not node.prev_sibling
+            )
+        )
         if is_body_like:
             yield from self.line(+1)
             yield from self.visit_default(node)
@@ -332,11 +344,6 @@ class LineGenerator(Visitor[Line]):
             v, keywords={"for", "else"}, parens={"for"}
         )
         self.visit_function_sig = partial(v, keywords={"def"}, parens=set())
-        for assertion in tokens.ASSERTS:
-            self.__setattr__(
-                f"visit_{assertion}",
-                partial(v, keywords={"assert"}, parens={"assert"}),
-            )
 
         for stmt in SIMPLE_STATEMENTS | ASSIGNMENTS:
             self.__setattr__(f"visit_{stmt}", self.visit_simple_stmt)
