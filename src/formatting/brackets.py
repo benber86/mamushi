@@ -109,10 +109,6 @@ class BracketTracker:
         self.previous = leaf
         self.maybe_increment_for_loop_variable(leaf)
 
-    def any_open_brackets(self) -> bool:
-        """Return True if there is an yet unmatched open bracket on the line."""
-        return bool(self.bracket_match)
-
     def max_delimiter_priority(
         self, exclude: Iterable[LeafID] = ()
     ) -> Priority:
@@ -140,7 +136,7 @@ class BracketTracker:
         To avoid splitting on the comma in this situation, increase the depth of
         tokens between `for` and `in`.
         """
-        if leaf.type == tokens.NAME and leaf.value == "for":
+        if leaf.type == tokens.FOR and leaf.value == "for":
             self.depth += 1
             self._for_loop_depths.append(self.depth)
             return True
@@ -160,10 +156,6 @@ class BracketTracker:
             return True
 
         return False
-
-    def get_open_lsqb(self) -> Optional[Leaf]:
-        """Return the most recent opening square bracket (if any)."""
-        return self.bracket_match.get((self.depth - 1, tokens.RSQB))
 
 
 def is_split_after_delimiter(
