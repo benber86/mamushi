@@ -493,9 +493,11 @@ def maybe_make_parens_invisible_in_atom(
     last = node.children[-1]
     if (
         isinstance(first, Leaf)
-        and first == tokens.LPAR
+        and first.type == tokens.LPAR
+        and first.value == "("
         and isinstance(last, Leaf)
-        and last == tokens.RPAR
+        and last.type == tokens.RPAR
+        and last.value == ")"
     ):
         middle = node.children[1]
         # make parentheses invisible
