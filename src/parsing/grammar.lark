@@ -283,6 +283,7 @@ special_builtins: empty | abi_decode
      | list
      | "(" operation ")"
 
+
 // Tokens
 // Adapted from Lark repo. https://github.com/lark-parser/lark/blob/master/examples/python3.lark
 // Adapted from: https://docs.python.org/3/reference/grammar.html
@@ -291,9 +292,9 @@ NAME: /[a-zA-Z_]\w*/
 COMMENT: /#[^\n]*/
 _NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
 
-
 STRING: /b?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 DOCSTRING: /(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+?strings: STRING+
 
 DEC_NUMBER: /0|[1-9]\d*/i
 HEX_NUMBER.2: /0x[\da-f]*/i
@@ -310,7 +311,7 @@ _number: DEC_NUMBER
 BOOL.2: "True" | "False"
 
 // TODO: Remove Docstring from here, and add to first part of body
-?literal: ( _number | STRING | DOCSTRING | BOOL )
+?literal: ( _number | strings | DOCSTRING | BOOL )
 
 %ignore /[\t \f]+/  // WS
 %ignore /\\[\t \f]*\r?\n/   // LINE_CONT
