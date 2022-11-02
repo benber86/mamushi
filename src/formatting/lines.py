@@ -580,10 +580,10 @@ def is_import(leaf: Leaf) -> bool:
     t = leaf.type
     v = leaf.value
     return bool(
-        t == tokens.NAME
+        t in {tokens.IMPORT_FROM, tokens.IMPORT}
         and (
-            (v == "import" and p and p.type == "import_name")
-            or (v == "from" and p and p.type == "import_from")
+            (v == "import" and p and p.type == "import")
+            or (v == "from" and p and p.type == "import")
         )
     )
 
