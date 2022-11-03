@@ -255,6 +255,7 @@ def right_hand_split(
     line: Line,
     line_length: int,
     omit: Collection[LeafID] = (),
+    force_optional_parentheses: bool = False,
 ) -> Iterator[Line]:
     """Split line into many lines, starting with the last matching bracket pair.
 
@@ -296,8 +297,9 @@ def right_hand_split(
     tail = bracket_split_build_line(tail_leaves, line, opening_bracket)
     bracket_split_succeeded_or_raise(head, body, tail)
     if (
+        not force_optional_parentheses
         # the opening bracket is an optional paren
-        opening_bracket.type == tokens.LPAR
+        and opening_bracket.type == tokens.LPAR
         and not opening_bracket.value
         # the closing bracket is an optional paren
         and closing_bracket.type == tokens.RPAR
@@ -606,7 +608,9 @@ def is_type_comment(leaf: Leaf, suffix: str = "") -> bool:
     )
 
 
-def left_hand_split(line: Line) -> Iterator[Line]:
+def left_hand_split(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """Split line into many lines, starting with the first matching bracket pair.
 
     Note: this usually looks weird, only use this for function definitions.
@@ -665,14 +669,16 @@ def normalize_prefix(leaf: Leaf, *, inside_brackets: bool) -> None:
     leaf.prefix = ""
 
 
-def dont_increase_indentation(split_func):
+def dont_increase_indentation(split_func: Callable):
     """Normalize prefix of the first leaf in every line returned by `split_func`.
 
     This is a decorator over relevant split functions.
     """
 
     @wraps(split_func)
-    def split_wrapper(line: Line) -> Iterator[Line]:
+    def split_wrapper(
+        line: Line, force_optional_parentheses: bool = False
+    ) -> Iterator[Line]:
         for split_line in split_func(line):
             normalize_prefix(split_line.leaves[0], inside_brackets=True)
             yield split_line
@@ -681,7 +687,9 @@ def dont_increase_indentation(split_func):
 
 
 @dont_increase_indentation
-def delimiter_split(line: Line) -> Iterator[Line]:
+def delimiter_split(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """Split according to delimiters of the highest priority.
 
     If the appropriate Features are given, the split will add trailing commas
@@ -744,7 +752,10 @@ def delimiter_split(line: Line) -> Iterator[Line]:
 
 
 def split_line(
-    line: Line, line_length: int, inner: bool = False
+    line: Line,
+    line_length: int,
+    inner: bool = False,
+    force_optional_parentheses: bool = False,
 ) -> Iterator[Line]:
     """Splits a `line` into potentially many lines.
     They should fit in the allotted `line_length` but might not be able to.
@@ -769,7 +780,9 @@ def split_line(
         transformers = [left_hand_split]
     else:
 
-        def _rhs(self: object, line: Line) -> Iterator[Line]:
+        def _rhs(
+            self: object, line: Line, force_optional_parentheses=False
+        ) -> Iterator[Line]:
             """Wraps calls to `right_hand_split`.
 
             The calls increasingly `omit` right-hand trailers (bracket pairs with
@@ -777,7 +790,14 @@ def split_line(
             bracket pair instead.
             """
             for omit in generate_trailers_to_omit(line, line_length):
-                lines = list(right_hand_split(line, line_length, omit=omit))
+                lines = list(
+                    right_hand_split(
+                        line,
+                        line_length,
+                        omit=omit,
+                        force_optional_parentheses=force_optional_parentheses,
+                    )
+                )
                 # Note: this check is only able to figure out if the first line of the
                 # *current* transformation fits in the line length.  This is true only
                 # for simple cases.  All others require running more transforms via
@@ -790,7 +810,11 @@ def split_line(
             # This mostly happens to multiline strings that are by definition
             # reported as not fitting a single line, as well as lines that contain
             # trailing commas (those have to be exploded).
-            yield from right_hand_split(line, line_length=line_length)
+            yield from right_hand_split(
+                line,
+                line_length=line_length,
+                force_optional_parentheses=force_optional_parentheses,
+            )
 
         # HACK: nested functions (like _rhs) compiled by mypyc don't retain their
         # __name__ attribute which is needed in `run_transformer` further down.
@@ -799,11 +823,7 @@ def split_line(
         rhs = type("rhs", (), {"__call__": _rhs})()
 
         if line.inside_brackets:
-            transformers = [delimiter_split]
-            if "\n" not in line_str:
-                # Only attempt RHS if we don't have multiline strings or comments
-                # on this line.
-                transformers.append(rhs)
+            transformers = [delimiter_split, rhs]
         else:
             transformers = [rhs]
 
@@ -815,7 +835,11 @@ def split_line(
         # split altogether.
         try:
             result = run_transformer(
-                line, transform, line_length=line_length, line_str=line_str
+                line,
+                transform,
+                line_length=line_length,
+                line_str=line_str,
+                force_optional_parentheses=force_optional_parentheses,
             )
         except CannotTransform:
             continue
@@ -909,20 +933,27 @@ def generate_trailers_to_omit(
 
 def run_transformer(
     line: Line,
-    transform: Callable[[Line], Iterator[Line]],
+    transform: Callable[[Line, bool], Iterator[Line]],
     line_length: int = 80,
     line_str: str = "",
+    force_optional_parentheses=False,
 ) -> List[Line]:
     if not line_str:
         line_str = line_to_string(line)
     result: List[Line] = []
-    for transformed_line in transform(line):
+    for transformed_line in transform(line, force_optional_parentheses):
         if str(transformed_line).strip("\n") == line_str:
             raise CannotTransform(
                 "Line transformer returned an unchanged result"
             )
 
-        result.extend(split_line(transformed_line, line_length))
+        result.extend(
+            split_line(
+                transformed_line,
+                line_length,
+                force_optional_parentheses=force_optional_parentheses,
+            )
+        )
 
     if (
         transform.__class__.__name__ != "rhs"
@@ -939,7 +970,12 @@ def run_transformer(
 
     line_copy = line.clone()
     append_leaves(line_copy, line, line.leaves)
-    second_opinion = run_transformer(line_copy, transform, line_str=line_str)
+    second_opinion = run_transformer(
+        line_copy,
+        transform,
+        line_str=line_str,
+        force_optional_parentheses=True,
+    )
     if all(
         is_line_short_enough(ln, line_length=line_length)
         for ln in second_opinion
@@ -975,7 +1011,9 @@ def append_leaves(
             new_line.append(comment_leaf, preformatted=True)
 
 
-def hug_power_op(line: Line) -> Iterator[Line]:
+def hug_power_op(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """A transformer which normalizes spacing around power operators."""
 
     # Performance optimization to avoid unnecessary Leaf clones and other ops.
