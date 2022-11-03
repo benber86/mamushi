@@ -40,7 +40,12 @@ STATEMENT_TYPES = {
     tokens.ASSERT_TOKEN,
 }
 
-ASSIGNMENTS = {"declaration", tokens.ASSIGN, tokens.AUG_ASSIGN}
+ASSIGNMENTS = {
+    tokens.DECLARATION,
+    tokens.CONSTANT_DEF,
+    tokens.ASSIGN,
+    tokens.AUG_ASSIGN,
+}
 
 ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
 

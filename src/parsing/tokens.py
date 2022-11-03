@@ -118,6 +118,8 @@ DECLARATIONS = {
     "_STRUCT_DECL",
     "_INTERFACE_DECL",
 }
+DECLARATION = "declaration"
+CONSTANT_DEF = "constant_def"
 BODY = "body"
 EVENT_BODY = "event_body"
 ENUM_BODY = "enum_body"
