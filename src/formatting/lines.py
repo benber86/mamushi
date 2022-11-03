@@ -598,16 +598,6 @@ def enumerate_reversed(sequence: Sequence[T]) -> Iterator[Tuple[Index, T]]:
         index -= 1
 
 
-def is_type_comment(leaf: Leaf, suffix: str = "") -> bool:
-    """Return True if the given leaf is a special comment.
-    Only returns true for type comments for now."""
-    t = leaf.type
-    v = leaf.value
-    return t in {tokens.COMMENT, tokens.STANDALONE_COMMENT} and v.startswith(
-        "# type:" + suffix
-    )
-
-
 def left_hand_split(
     line: Line, force_optional_parentheses: bool = False
 ) -> Iterator[Line]:
