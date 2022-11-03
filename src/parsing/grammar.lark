@@ -109,7 +109,8 @@ interface_def: _INTERFACE_DECL NAME ":" _NEWLINE _INDENT ( interface_function _N
 // Conversely, the rest of the statements require a newline to be considered complete
 // (as they do not create a new block)
 _stmt: ( if_stmt | for_stmt ) [COMMENT]
-     | (declaration
+     | _simple_stmt
+_simple_stmt: (declaration
        | assign
        | aug_assign
        | return_stmt
@@ -164,7 +165,7 @@ assert_stmt: _ASSERT _expr -> assert
            | _ASSERT _expr "," _expr -> assert_with_reason
            | _ASSERT _expr "," _UNREACHABLE -> assert_unreachable
 
-body: _NEWLINE _INDENT ([COMMENT] _NEWLINE | _stmt)+ _DEDENT
+body: _simple_stmt | _NEWLINE _INDENT ([COMMENT] _NEWLINE | _stmt)+ _DEDENT
 cond_exec: _expr ":" body
 default_exec: body
 if_stmt: "if" cond_exec ("elif" cond_exec)* ["else" ":" default_exec]
@@ -282,6 +283,7 @@ special_builtins: empty | abi_decode
      | list
      | "(" operation ")"
 
+
 // Tokens
 // Adapted from Lark repo. https://github.com/lark-parser/lark/blob/master/examples/python3.lark
 // Adapted from: https://docs.python.org/3/reference/grammar.html
@@ -290,9 +292,9 @@ NAME: /[a-zA-Z_]\w*/
 COMMENT: /#[^\n]*/
 _NEWLINE: ( /\r?\n[\t ]*/ | COMMENT )+
 
-
 STRING: /b?("(?!"").*?(?<!\\)(\\\\)*?"|'(?!'').*?(?<!\\)(\\\\)*?')/i
 DOCSTRING: /(""".*?(?<!\\)(\\\\)*?"""|'''.*?(?<!\\)(\\\\)*?''')/is
+?strings: STRING+
 
 DEC_NUMBER: /0|[1-9]\d*/i
 HEX_NUMBER.2: /0x[\da-f]*/i
@@ -309,7 +311,7 @@ _number: DEC_NUMBER
 BOOL.2: "True" | "False"
 
 // TODO: Remove Docstring from here, and add to first part of body
-?literal: ( _number | STRING | DOCSTRING | BOOL )
+?literal: ( _number | strings | DOCSTRING | BOOL )
 
 %ignore /[\t \f]+/  // WS
 %ignore /\\[\t \f]*\r?\n/   // LINE_CONT

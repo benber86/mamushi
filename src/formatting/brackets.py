@@ -22,9 +22,9 @@ LOGIC_PRIORITY: Final = 14
 STRING_PRIORITY: Final = 12
 COMPARATOR_PRIORITY: Final = 10
 MATH_PRIORITIES: Final = {
-    tokens.BITOR: 9,
-    tokens.BITXOR: 8,
-    tokens.BITAND: 7,
+    tokens.VBAR: 9,
+    tokens.CARET: 8,
+    tokens.AMPERSAND: 7,
     tokens.LEFTSHIFT: 6,
     tokens.RIGHTSHIFT: 6,
     tokens.PLUS: 5,
@@ -109,10 +109,6 @@ class BracketTracker:
         self.previous = leaf
         self.maybe_increment_for_loop_variable(leaf)
 
-    def any_open_brackets(self) -> bool:
-        """Return True if there is an yet unmatched open bracket on the line."""
-        return bool(self.bracket_match)
-
     def max_delimiter_priority(
         self, exclude: Iterable[LeafID] = ()
     ) -> Priority:
@@ -140,7 +136,7 @@ class BracketTracker:
         To avoid splitting on the comma in this situation, increase the depth of
         tokens between `for` and `in`.
         """
-        if leaf.type == tokens.NAME and leaf.value == "for":
+        if leaf.type == tokens.FOR and leaf.value == "for":
             self.depth += 1
             self._for_loop_depths.append(self.depth)
             return True
@@ -160,10 +156,6 @@ class BracketTracker:
             return True
 
         return False
-
-    def get_open_lsqb(self) -> Optional[Leaf]:
-        """Return the most recent opening square bracket (if any)."""
-        return self.bracket_match.get((self.depth - 1, tokens.RSQB))
 
 
 def is_split_after_delimiter(
@@ -233,31 +225,3 @@ def is_split_before_delimiter(
         return LOGIC_PRIORITY
 
     return 0
-
-
-def max_delimiter_priority_in_atom(node: LN) -> Priority:
-    """Return maximum delimiter priority inside `node`.
-
-    This is specific to atoms with contents contained in a pair of parentheses.
-    If `node` isn't an atom or there are no enclosing parentheses, returns 0.
-    """
-    if node.type != tokens.ATOM:
-        return 0
-
-    first = node.children[0]
-    last = node.children[-1]
-    if not (first.type == tokens.LPAR and last.type == tokens.RPAR):
-        return 0
-
-    bt = BracketTracker()
-    for c in node.children[1:-1]:
-        if isinstance(c, Leaf):
-            bt.mark(c)
-        else:
-            for leaf in c.leaves():
-                bt.mark(leaf)
-    try:
-        return bt.max_delimiter_priority()
-
-    except ValueError:
-        return 0

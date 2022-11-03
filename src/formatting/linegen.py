@@ -23,6 +23,7 @@ from formatting.strings import (
 )
 from parsing.pytree import Leaf, Node
 from formatting.lines import Line
+from parsing.tokens import SIMPLE_STATEMENTS, ASSIGNMENTS_SIGNS
 from parsing import tokens
 import re
 
@@ -40,29 +41,11 @@ STATEMENT_TYPES = {
     tokens.ASSERT_TOKEN,
 }
 
-ASSIGNMENTS = {"declaration", "assign", "aug_assign"}
-
-ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
-
-SIMPLE_STATEMENTS = {
-    "variable_def",
-    "return_stmt",
-    "pass_stmt",
-    "break_stmt",
-    "continue_stmt",
-    "raise",
-    "raise_with_reason",
-    "log_stmt",
-    "constant_def",
-    "immutable_def",
-    "interface_def",
-    "struct_def",
-    "enum_def",
-    "event_def",
-    "indexed_event_arg",
-    "event_member",
-    "enum_member",
-    "struct_member",
+ASSIGNMENTS = {
+    tokens.DECLARATION,
+    tokens.CONSTANT_DEF,
+    tokens.ASSIGN,
+    tokens.AUG_ASSIGN,
 }
 
 
@@ -105,8 +88,11 @@ class LineGenerator(Visitor[Line]):
         yield complete_line
 
     def visit_default(self, node: LN) -> Iterator[Line]:
-        if isinstance(node, Leaf) and node.type not in tokens.WHITESPACE:
-            self.current_line.append(node)
+        if isinstance(node, Leaf):
+            if node.type == tokens.STRING:
+                node.value = normalize_string_quotes(node.value)
+            if node.type not in tokens.WHITESPACE:
+                self.current_line.append(node)
         yield from super().visit_default(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
@@ -301,8 +287,18 @@ class LineGenerator(Visitor[Line]):
         """A statement without nested statements."""
         if node.type in ASSIGNMENTS:
             normalize_invisible_parens(node, parens_after=ASSIGNMENTS_SIGNS)
-
-        is_body_like = node.parent and node.parent.type not in tokens.BODIES
+        if node.type in tokens.ASSERTS:
+            normalize_invisible_parens(node, parens_after={"assert", ","})
+        is_body_like = node.parent and (
+            # TODO: handle this more cleanly
+            node.parent.type not in tokens.BODIES
+            # for single line body stmts
+            or (
+                node.parent.type == tokens.BODY
+                and node.type in SIMPLE_STATEMENTS
+                and not node.prev_sibling
+            )
+        )
         if is_body_like:
             yield from self.line(+1)
             yield from self.visit_default(node)
@@ -329,11 +325,6 @@ class LineGenerator(Visitor[Line]):
             v, keywords={"for", "else"}, parens={"for"}
         )
         self.visit_function_sig = partial(v, keywords={"def"}, parens=set())
-        for assertion in tokens.ASSERTS:
-            self.__setattr__(
-                f"visit_{assertion}",
-                partial(v, keywords={"assert"}, parens={"assert"}),
-            )
 
         for stmt in SIMPLE_STATEMENTS | ASSIGNMENTS:
             self.__setattr__(f"visit_{stmt}", self.visit_simple_stmt)
@@ -447,6 +438,14 @@ def normalize_invisible_parens(
 
     check_lpar = False
     for index, child in enumerate(list(node.children)):
+        # Add parentheses around tuple assignments on lhs.
+        if (
+            index == 0
+            and isinstance(child, Node)
+            and child.type == tokens.MULTIPLE_ASSIGN
+        ):
+            check_lpar = True
+
         if check_lpar:
             if child.type == tokens.COND_EXEC:
                 first_child = child.children[0]
@@ -482,9 +481,11 @@ def maybe_make_parens_invisible_in_atom(
     last = node.children[-1]
     if (
         isinstance(first, Leaf)
-        and first == tokens.LPAR
+        and first.type == tokens.LPAR
+        and first.value == "("
         and isinstance(last, Leaf)
-        and last == tokens.RPAR
+        and last.type == tokens.RPAR
+        and last.value == ")"
     ):
         middle = node.children[1]
         # make parentheses invisible

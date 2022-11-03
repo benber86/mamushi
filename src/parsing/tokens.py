@@ -27,9 +27,13 @@ NEWLINE = "_NEWLINE"
 WHITESPACE = [INDENT, DEDENT, NEWLINE]
 
 # Operations
-BITAND = "_BITAND"
-BITOR = "_BITOR"
-BITXOR = "_BITXOR"
+AMPERSAND = "_BITAND"
+VBAR = "_BITOR"
+CARET = "_BITXOR"
+BITAND = "bitand"
+BITOR = "bitor"
+BITXOR = "bitxor"
+BITNOT = "invert"
 PLUS = "PLUS"
 MINUS = "MINUS"
 PRODUCT = "_PRODUCT"
@@ -41,6 +45,8 @@ MUL = "mul"
 MOD = "mod"
 DIV = "div"
 POW = "pow"
+SHL = "shl"
+SHR = "shr"
 RIGHTSHIFT = "_SHR"
 LEFTSHIFT = "_SHL"
 DOUBLESTAR = "_POW"
@@ -49,22 +55,40 @@ STAR = "WILDCARD"
 PERCENT = "PERCENT"
 OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
 EQUAL = "EQUAL"
-ASSIGN_OPERATORS = [ADD, SUB, DIV, MUL, MOD, BITOR, BITAND, BITXOR]
+ASSIGN = "assign"
+AUG_ASSIGN = "aug_assign"
+MULTIPLE_ASSIGN = "multiple_assign"
+ASSIGN_OPERATORS = [
+    ADD,
+    SUB,
+    DIV,
+    MUL,
+    MOD,
+    POW,
+    BITOR,
+    BITXOR,
+    BITAND,
+    SHR,
+    SHL,
+]
 MATH_OPERATORS = {
     PLUS,
     MINUS,
     STAR,
     SLASH,
-    BITOR,
-    BITAND,
-    BITXOR,
+    VBAR,
+    AMPERSAND,
+    CARET,
     PERCENT,
     LEFTSHIFT,
     RIGHTSHIFT,
     DOUBLESTAR,
 }
 
-LOGIC_OPERATORS = {"_AND", "_OR"}
+BOOL_OR = "_OR"
+BOOL_AND = "_AND"
+BOOL_NOT = "_NOT"
+LOGIC_OPERATORS = {"or", "and"}
 
 COMPARATORS = {
     "LESSTHAN",
@@ -83,6 +107,7 @@ IMPORT = "import"
 # Statements
 PARAMETERS = "parameters"
 ARGUMENTS = "arguments"
+KWARG = "kwarg"
 DECORATOR = "decorator"
 FLOW_CONTROL = {"return", "break", "continue"}
 INTERFACE_FUNCTION = "interface_function"
@@ -93,6 +118,8 @@ DECLARATIONS = {
     "_STRUCT_DECL",
     "_INTERFACE_DECL",
 }
+DECLARATION = "declaration"
+CONSTANT_DEF = "constant_def"
 BODY = "body"
 EVENT_BODY = "event_body"
 ENUM_BODY = "enum_body"
@@ -135,3 +162,45 @@ ASSERT_TOKEN = "_ASSERT"
 ASSERT_WITH_REASON = "assert_with_reason"
 ASSERT_UNREACHABLE = "assert_unreachable"
 ASSERTS = {ASSERT, ASSERT_WITH_REASON, ASSERT_UNREACHABLE}
+
+VARIABLE_DEF = "variable_def"
+RETURN_STMT = "return_stmt"
+PASS_STMT = "pass_stmt"
+BREAK_STMT = "break_stmt"
+CONTINUE_STMT = "continue_stmt"
+RAISE = "raise"
+RAISE_WITH_REASON = "raise_with_reason"
+IMMUTABLE_DEF = "immutable_def"
+INTERFACE_DEF = "interface_def"
+STRUCT_DEF = "struct_def"
+ENUM_DEF = "enum_def"
+EVENT_DEF = "event_def"
+INDEXED_EVENT_ARG = "indexed_event_arg"
+EVENT_MEMBER = "event_member"
+ENUM_MEMBER = "enum_member"
+STRUCT_MEMBER = "struct_member"
+
+SIMPLE_STATEMENTS = {
+    VARIABLE_DEF,
+    RETURN_STMT,
+    PASS_STMT,
+    BREAK_STMT,
+    CONTINUE_STMT,
+    RAISE,
+    RAISE_WITH_REASON,
+    LOG_STMT,
+    CONSTANT_DEF,
+    IMMUTABLE_DEF,
+    INTERFACE_DEF,
+    STRUCT_DEF,
+    ENUM_DEF,
+    EVENT_DEF,
+    INDEXED_EVENT_ARG,
+    EVENT_MEMBER,
+    ENUM_MEMBER,
+    STRUCT_MEMBER,
+    ASSIGN,
+    AUG_ASSIGN,
+} | ASSERTS
+
+ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}

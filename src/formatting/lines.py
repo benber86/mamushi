@@ -66,8 +66,6 @@ class Line:
         if not has_value:
             return
 
-        if tokens.COLON == leaf.type and self.is_class_paren_empty:
-            del self.leaves[-2:]
         if self.leaves and not preformatted:
             # Note: at this point leaf.prefix should be empty except for
             # imports, for which we only preserve newlines.
@@ -77,8 +75,7 @@ class Line:
             self.bracket_tracker.mark(leaf)
             if self.has_magic_trailing_comma(leaf):
                 self.remove_trailing_comma()
-        if not self.append_comment(leaf):
-            self.leaves.append(leaf)
+        self.leaves.append(leaf)
 
     def append_safe(self, leaf: Leaf, preformatted: bool = False) -> None:
         """Like :func:`append()` but disallow invalid standalone comment structure.
@@ -132,15 +129,6 @@ class Line:
         return first_leaf.type == tokens.PRAGMA
 
     @property
-    def is_class(self) -> bool:
-        """Is this line a class definition?"""
-        return (
-            bool(self)
-            and self.leaves[0].type == tokens.NAME
-            and self.leaves[0].value == "class"
-        )
-
-    @property
     def is_def(self) -> bool:
         try:
             first_leaf = self.leaves[0]
@@ -153,29 +141,6 @@ class Line:
             and first_leaf.parent.parent.type == tokens.INTERFACE_FUNCTION
         )
         return (first_leaf.type in tokens.DECLARATIONS) and not is_abi
-
-    @property
-    def is_class_paren_empty(self) -> bool:
-        """Is this a class with no base classes but using parentheses?
-
-        Those are unnecessary and should be removed.
-        """
-        return (
-            bool(self)
-            and len(self.leaves) == 4
-            and self.is_class
-            and self.leaves[2].type == tokens.LPAR
-            and self.leaves[2].value == "("
-            and self.leaves[3].type == tokens.RPAR
-            and self.leaves[3].value == ")"
-        )
-
-    @property
-    def opens_block(self) -> bool:
-        """Does this line open a new level of indentation."""
-        if len(self.leaves) == 0:
-            return False
-        return self.leaves[-1].type == tokens.COLON
 
     def contains_standalone_comments(
         self, depth_limit: int = sys.maxsize
@@ -225,43 +190,6 @@ class Line:
             return True
 
         return False
-
-    def append_comment(self, comment: Leaf) -> bool:
-        """Add an inline or standalone comment to the line."""
-        if (
-            comment.type == tokens.STANDALONE_COMMENT
-            and self.bracket_tracker.any_open_brackets()
-        ):
-            comment.prefix = ""
-            return False
-
-        if comment.type != tokens.COMMENT:
-            return False
-
-        if not self.leaves:
-            comment.type = tokens.STANDALONE_COMMENT
-            comment.prefix = ""
-            return False
-
-        last_leaf = self.leaves[-1]
-        if (
-            last_leaf.type == tokens.RPAR
-            and not last_leaf.value
-            and last_leaf.parent
-            and len(list(last_leaf.parent.leaves())) <= 3
-            and not is_type_comment(comment)
-        ):
-            # Comments on an optional parens wrapping a single leaf should belong to
-            # the wrapped node except if it's a type comment. Pinning the comment like
-            # this avoids unstable formatting caused by comment migration.
-            if len(self.leaves) < 2:
-                comment.type = tokens.STANDALONE_COMMENT
-                comment.prefix = ""
-                return False
-
-            last_leaf = self.leaves[-2]
-        self.comments.setdefault(id(last_leaf), []).append(comment)
-        return True
 
     def comments_after(self, leaf: Leaf) -> List[Leaf]:
         """Generate comments that should appear directly after `leaf`."""
@@ -327,6 +255,7 @@ def right_hand_split(
     line: Line,
     line_length: int,
     omit: Collection[LeafID] = (),
+    force_optional_parentheses: bool = False,
 ) -> Iterator[Line]:
     """Split line into many lines, starting with the last matching bracket pair.
 
@@ -368,8 +297,9 @@ def right_hand_split(
     tail = bracket_split_build_line(tail_leaves, line, opening_bracket)
     bracket_split_succeeded_or_raise(head, body, tail)
     if (
+        not force_optional_parentheses
         # the opening bracket is an optional paren
-        opening_bracket.type == tokens.LPAR
+        and opening_bracket.type == tokens.LPAR
         and not opening_bracket.value
         # the closing bracket is an optional paren
         and closing_bracket.type == tokens.RPAR
@@ -652,10 +582,10 @@ def is_import(leaf: Leaf) -> bool:
     t = leaf.type
     v = leaf.value
     return bool(
-        t == tokens.NAME
+        t in {tokens.IMPORT_FROM, tokens.IMPORT}
         and (
-            (v == "import" and p and p.type == "import_name")
-            or (v == "from" and p and p.type == "import_from")
+            (v == "import" and p and p.type == "import")
+            or (v == "from" and p and p.type == "import")
         )
     )
 
@@ -668,17 +598,9 @@ def enumerate_reversed(sequence: Sequence[T]) -> Iterator[Tuple[Index, T]]:
         index -= 1
 
 
-def is_type_comment(leaf: Leaf, suffix: str = "") -> bool:
-    """Return True if the given leaf is a special comment.
-    Only returns true for type comments for now."""
-    t = leaf.type
-    v = leaf.value
-    return t in {tokens.COMMENT, tokens.STANDALONE_COMMENT} and v.startswith(
-        "# type:" + suffix
-    )
-
-
-def left_hand_split(line: Line) -> Iterator[Line]:
+def left_hand_split(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """Split line into many lines, starting with the first matching bracket pair.
 
     Note: this usually looks weird, only use this for function definitions.
@@ -737,14 +659,16 @@ def normalize_prefix(leaf: Leaf, *, inside_brackets: bool) -> None:
     leaf.prefix = ""
 
 
-def dont_increase_indentation(split_func):
+def dont_increase_indentation(split_func: Callable):
     """Normalize prefix of the first leaf in every line returned by `split_func`.
 
     This is a decorator over relevant split functions.
     """
 
     @wraps(split_func)
-    def split_wrapper(line: Line) -> Iterator[Line]:
+    def split_wrapper(
+        line: Line, force_optional_parentheses: bool = False
+    ) -> Iterator[Line]:
         for split_line in split_func(line):
             normalize_prefix(split_line.leaves[0], inside_brackets=True)
             yield split_line
@@ -753,7 +677,9 @@ def dont_increase_indentation(split_func):
 
 
 @dont_increase_indentation
-def delimiter_split(line: Line) -> Iterator[Line]:
+def delimiter_split(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """Split according to delimiters of the highest priority.
 
     If the appropriate Features are given, the split will add trailing commas
@@ -816,7 +742,10 @@ def delimiter_split(line: Line) -> Iterator[Line]:
 
 
 def split_line(
-    line: Line, line_length: int, inner: bool = False
+    line: Line,
+    line_length: int,
+    inner: bool = False,
+    force_optional_parentheses: bool = False,
 ) -> Iterator[Line]:
     """Splits a `line` into potentially many lines.
     They should fit in the allotted `line_length` but might not be able to.
@@ -841,7 +770,9 @@ def split_line(
         transformers = [left_hand_split]
     else:
 
-        def _rhs(self: object, line: Line) -> Iterator[Line]:
+        def _rhs(
+            self: object, line: Line, force_optional_parentheses=False
+        ) -> Iterator[Line]:
             """Wraps calls to `right_hand_split`.
 
             The calls increasingly `omit` right-hand trailers (bracket pairs with
@@ -849,7 +780,14 @@ def split_line(
             bracket pair instead.
             """
             for omit in generate_trailers_to_omit(line, line_length):
-                lines = list(right_hand_split(line, line_length, omit=omit))
+                lines = list(
+                    right_hand_split(
+                        line,
+                        line_length,
+                        omit=omit,
+                        force_optional_parentheses=force_optional_parentheses,
+                    )
+                )
                 # Note: this check is only able to figure out if the first line of the
                 # *current* transformation fits in the line length.  This is true only
                 # for simple cases.  All others require running more transforms via
@@ -862,7 +800,11 @@ def split_line(
             # This mostly happens to multiline strings that are by definition
             # reported as not fitting a single line, as well as lines that contain
             # trailing commas (those have to be exploded).
-            yield from right_hand_split(line, line_length=line_length)
+            yield from right_hand_split(
+                line,
+                line_length=line_length,
+                force_optional_parentheses=force_optional_parentheses,
+            )
 
         # HACK: nested functions (like _rhs) compiled by mypyc don't retain their
         # __name__ attribute which is needed in `run_transformer` further down.
@@ -871,11 +813,7 @@ def split_line(
         rhs = type("rhs", (), {"__call__": _rhs})()
 
         if line.inside_brackets:
-            transformers = [delimiter_split]
-            if "\n" not in line_str:
-                # Only attempt RHS if we don't have multiline strings or comments
-                # on this line.
-                transformers.append(rhs)
+            transformers = [delimiter_split, rhs]
         else:
             transformers = [rhs]
 
@@ -887,7 +825,11 @@ def split_line(
         # split altogether.
         try:
             result = run_transformer(
-                line, transform, line_length=line_length, line_str=line_str
+                line,
+                transform,
+                line_length=line_length,
+                line_str=line_str,
+                force_optional_parentheses=force_optional_parentheses,
             )
         except CannotTransform:
             continue
@@ -981,20 +923,27 @@ def generate_trailers_to_omit(
 
 def run_transformer(
     line: Line,
-    transform: Callable[[Line], Iterator[Line]],
+    transform: Callable[[Line, bool], Iterator[Line]],
     line_length: int = 80,
     line_str: str = "",
+    force_optional_parentheses=False,
 ) -> List[Line]:
     if not line_str:
         line_str = line_to_string(line)
     result: List[Line] = []
-    for transformed_line in transform(line):
+    for transformed_line in transform(line, force_optional_parentheses):
         if str(transformed_line).strip("\n") == line_str:
             raise CannotTransform(
                 "Line transformer returned an unchanged result"
             )
 
-        result.extend(split_line(transformed_line, line_length))
+        result.extend(
+            split_line(
+                transformed_line,
+                line_length,
+                force_optional_parentheses=force_optional_parentheses,
+            )
+        )
 
     if (
         transform.__class__.__name__ != "rhs"
@@ -1011,7 +960,12 @@ def run_transformer(
 
     line_copy = line.clone()
     append_leaves(line_copy, line, line.leaves)
-    second_opinion = run_transformer(line_copy, transform, line_str=line_str)
+    second_opinion = run_transformer(
+        line_copy,
+        transform,
+        line_str=line_str,
+        force_optional_parentheses=True,
+    )
     if all(
         is_line_short_enough(ln, line_length=line_length)
         for ln in second_opinion
@@ -1047,7 +1001,9 @@ def append_leaves(
             new_line.append(comment_leaf, preformatted=True)
 
 
-def hug_power_op(line: Line) -> Iterator[Line]:
+def hug_power_op(
+    line: Line, force_optional_parentheses: bool = False
+) -> Iterator[Line]:
     """A transformer which normalizes spacing around power operators."""
 
     # Performance optimization to avoid unnecessary Leaf clones and other ops.
@@ -1065,9 +1021,15 @@ def hug_power_op(line: Line) -> Iterator[Line]:
             new_leaf.prefix = ""
             should_hug = False
 
-        should_hug = (
-            0 < idx < len(line.leaves) - 1
-        ) and leaf.type == tokens.DOUBLESTAR
+        should_hug = (0 < idx < len(line.leaves) - 1) and (
+            leaf.type == tokens.DOUBLESTAR
+            # we don't want to hug if we're in x **= y
+            and bool(
+                leaf.parent
+                and leaf.parent.parent
+                and leaf.parent.parent.type != tokens.AUG_ASSIGN
+            )
+        )
         if should_hug:
             new_leaf.prefix = ""
 

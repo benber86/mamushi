@@ -10,6 +10,8 @@ pre-commit = "==2.20.0"
 types-attrs = "*"
 lark = ">=1.0.0"
 pytest = ">=7.0.0"
+pytest-cov = ">=3.0.0"
+coverage = ">=6.5.0"
 
 [dev-packages]
 

@@ -1,0 +1,7 @@
+[report]
+exclude_lines =
+    raise NotImplementedError
+    raise CannotSplit
+    except ValueError
+omit =
+    src/parsing/pytree.py

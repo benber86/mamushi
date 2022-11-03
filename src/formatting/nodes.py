@@ -44,14 +44,6 @@ def is_atom_with_invisible_parens(node: LN) -> bool:
     )
 
 
-def is_empty_lpar(leaf: Leaf) -> bool:
-    return leaf.type == tokens.LPAR and leaf.value == ""
-
-
-def is_empty_rpar(leaf: Leaf) -> bool:
-    return leaf.type == tokens.RPAR and leaf.value == ""
-
-
 def ensure_visible(leaf: Leaf) -> None:
     """Make sure parentheses are visible.
 
