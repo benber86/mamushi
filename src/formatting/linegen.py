@@ -23,6 +23,7 @@ from formatting.strings import (
 )
 from parsing.pytree import Leaf, Node
 from formatting.lines import Line
+from parsing.tokens import SIMPLE_STATEMENTS, ASSIGNMENTS_SIGNS
 from parsing import tokens
 import re
 
@@ -46,31 +47,6 @@ ASSIGNMENTS = {
     tokens.ASSIGN,
     tokens.AUG_ASSIGN,
 }
-
-ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
-
-SIMPLE_STATEMENTS = {
-    "variable_def",
-    "return_stmt",
-    "pass_stmt",
-    "break_stmt",
-    "continue_stmt",
-    "raise",
-    "raise_with_reason",
-    "log_stmt",
-    "constant_def",
-    "immutable_def",
-    "interface_def",
-    "struct_def",
-    "enum_def",
-    "event_def",
-    "indexed_event_arg",
-    "event_member",
-    "enum_member",
-    "struct_member",
-    tokens.ASSIGN,
-    tokens.AUG_ASSIGN,
-} | tokens.ASSERTS
 
 
 class Visitor(Generic[T]):

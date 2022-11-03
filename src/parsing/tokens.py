@@ -162,3 +162,45 @@ ASSERT_TOKEN = "_ASSERT"
 ASSERT_WITH_REASON = "assert_with_reason"
 ASSERT_UNREACHABLE = "assert_unreachable"
 ASSERTS = {ASSERT, ASSERT_WITH_REASON, ASSERT_UNREACHABLE}
+
+VARIABLE_DEF = "variable_def"
+RETURN_STMT = "return_stmt"
+PASS_STMT = "pass_stmt"
+BREAK_STMT = "break_stmt"
+CONTINUE_STMT = "continue_stmt"
+RAISE = "raise"
+RAISE_WITH_REASON = "raise_with_reason"
+IMMUTABLE_DEF = "immutable_def"
+INTERFACE_DEF = "interface_def"
+STRUCT_DEF = "struct_def"
+ENUM_DEF = "enum_def"
+EVENT_DEF = "event_def"
+INDEXED_EVENT_ARG = "indexed_event_arg"
+EVENT_MEMBER = "event_member"
+ENUM_MEMBER = "enum_member"
+STRUCT_MEMBER = "struct_member"
+
+SIMPLE_STATEMENTS = {
+    VARIABLE_DEF,
+    RETURN_STMT,
+    PASS_STMT,
+    BREAK_STMT,
+    CONTINUE_STMT,
+    RAISE,
+    RAISE_WITH_REASON,
+    LOG_STMT,
+    CONSTANT_DEF,
+    IMMUTABLE_DEF,
+    INTERFACE_DEF,
+    STRUCT_DEF,
+    ENUM_DEF,
+    EVENT_DEF,
+    INDEXED_EVENT_ARG,
+    EVENT_MEMBER,
+    ENUM_MEMBER,
+    STRUCT_MEMBER,
+    ASSIGN,
+    AUG_ASSIGN,
+} | ASSERTS
+
+ASSIGNMENTS_SIGNS = {"=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="}
