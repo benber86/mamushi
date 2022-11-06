@@ -1,2 +1,7 @@
+coverage:
+  status:
+    patch:
+      default:
+        target: 50%
 ignore:
   - "*/tests/*”
