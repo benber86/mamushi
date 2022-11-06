@@ -1,6 +1,6 @@
 # EXPERIMENTAL VYPER PARSER
 # https://github.com/vyperlang/vyper/
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 import re
 from lark import Lark, Tree, Token
 from lark.indenter import Indenter
@@ -113,11 +113,11 @@ class Parser(object):
         }
         # we need to handle the case where the first line is a standalone comment
         if comments and comments[0].line == 1 and 1 not in terminal_leaves:
-            comment_mapping[-1] = cmt_idx[1]
+            comment_mapping[(-1,)] = cmt_idx[1]
         return comment_mapping
 
     def _to_pytree(
-        self, lark_tree: Tree, comment_mapping: Optional[Dict[Token, Token]]
+        self, lark_tree: Tree, comment_mapping: Optional[Dict[Tuple, Token]]
     ) -> Node:
         def _transform(tree: Tree):
             """
@@ -171,12 +171,12 @@ class Parser(object):
             return node
 
         module = _transform(lark_tree)
-        if comment_mapping and -1 in comment_mapping:
+        if comment_mapping and (-1,) in comment_mapping:
             module.children.insert(
                 0,
                 Leaf(
-                    type=comment_mapping[-1].type,
-                    value=comment_mapping[-1].value,
+                    type=comment_mapping[(-1,)].type,
+                    value=comment_mapping[(-1,)].value,
                 ),
             )
 
