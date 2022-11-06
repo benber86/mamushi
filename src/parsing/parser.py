@@ -171,11 +171,3 @@ class Parser(object):
             )
 
         return module
-
-
-if __name__ == "__main__":
-    p = Parser()
-    with open("test.vy", "r") as fp:
-        code = fp.read()
-    p.parse(code)
-    print(p._comments)
