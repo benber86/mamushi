@@ -74,8 +74,9 @@ class Line:
         if self.inside_brackets or not preformatted:
             self.bracket_tracker.mark(leaf)
             if self.has_magic_trailing_comma(leaf):
-                self.remove_trailing_comma()
-        self.leaves.append(leaf)
+                self.magic_trailing_comma = leaf
+        if not self.append_comment(leaf):
+            self.leaves.append(leaf)
 
     def append_safe(self, leaf: Leaf, preformatted: bool = False) -> None:
         """Like :func:`append()` but disallow invalid standalone comment structure.
@@ -191,17 +192,45 @@ class Line:
 
         return False
 
+    def append_comment(self, comment: Leaf) -> bool:
+        """Add an inline or standalone comment to the line."""
+        if (
+            comment.type == tokens.STANDALONE_COMMENT
+            and self.bracket_tracker.any_open_brackets()
+        ):
+            comment.prefix = ""
+            return False
+
+        if comment.type != tokens.COMMENT:
+            return False
+
+        if not self.leaves:
+            comment.type = tokens.STANDALONE_COMMENT
+            comment.prefix = ""
+            return False
+
+        last_leaf = self.leaves[-1]
+        if (
+            last_leaf.type == tokens.RPAR
+            and not last_leaf.value
+            and last_leaf.parent
+            and len(list(last_leaf.parent.leaves())) <= 3
+        ):
+            # Comments on an optional parens wrapping a single leaf should belong to
+            # the wrapped node except if it's a type comment. Pinning the comment like
+            # this avoids unstable formatting caused by comment migration.
+            if len(self.leaves) < 2:
+                comment.type = tokens.STANDALONE_COMMENT
+                comment.prefix = ""
+                return False
+
+            last_leaf = self.leaves[-2]
+        self.comments.setdefault(id(last_leaf), []).append(comment)
+        return True
+
     def comments_after(self, leaf: Leaf) -> List[Leaf]:
         """Generate comments that should appear directly after `leaf`."""
         return self.comments.get(id(leaf), [])
-
-    def remove_trailing_comma(self) -> None:
-        """Remove the trailing comma and moves the comments attached to it."""
-        trailing_comma = self.leaves.pop()
-        trailing_comma_comments = self.comments.pop(id(trailing_comma), [])
-        self.comments.setdefault(id(self.leaves[-1]), []).extend(
-            trailing_comma_comments
-        )
 
     def enumerate_with_length(
         self, reversed: bool = False
