@@ -162,6 +162,16 @@ class LineGenerator(Visitor[Line]):
             node.value = docstring
         yield from self.visit_default(node)
 
+    def visit_COMMENT(self, node: Leaf) -> Iterator[Line]:
+        any_open_brackets = (
+            self.current_line.bracket_tracker.any_open_brackets()
+        )
+        self.current_line.append(node)
+        if not any_open_brackets:
+            # regular trailing comment
+            yield from self.line()
+        yield from super().visit_default(node)
+
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
         # if no content we can yield
         if not node.value.strip():
