@@ -72,7 +72,7 @@ class Parser(object):
         cmt_idx = {c.line: c for c in comments}
         comment_lines = [
             cmt_idx[i] if i in cmt_idx else None
-            for i in range(latest_comment_line)
+            for i in range(latest_comment_line + 1)
         ]
 
         queue = [tree]
@@ -99,16 +99,9 @@ class Parser(object):
                         or child.end_column
                         >= terminal_leaves[child.line].end_column
                     ):
-                        # if the last token of the node is a new line we want to add the comment
-                        # before it
-                        if child.type == NEWLINE:
-                            if i > 1:
-                                terminal_leaves[child.line] = node.children[
-                                    i - 1
-                                ]
-                            # we handle the case where a comment is the first node later
-                            else:
-                                continue
+                        # we handle the case where a comment is the first node later
+                        if child.type == NEWLINE and i == 0:
+                            continue
                         else:
                             terminal_leaves[child.line] = child
                 else:
@@ -126,7 +119,7 @@ class Parser(object):
     def _to_pytree(
         self, lark_tree: Tree, comment_mapping: Optional[Dict[Token, Token]]
     ) -> Node:
-        def _transform(tree: Tree, prev_type=None):
+        def _transform(tree: Tree):
             """
             Convert a Lark tree to Pytree
             """
@@ -134,15 +127,9 @@ class Parser(object):
             for i, child in enumerate(tree.children):
 
                 if isinstance(child, Tree):
-                    subnodes.append(_transform(child, prev_type))
+                    subnodes.append(_transform(child))
 
                 else:
-                    subnodes.append(
-                        Leaf(
-                            type=child.type,
-                            value=child.value,
-                        )
-                    )
                     child_id = (
                         child.value,
                         child.type,
@@ -150,12 +137,34 @@ class Parser(object):
                         child.end_column,
                         child.line,
                     )
-                    if comment_mapping and child_id in comment_mapping:
+                    if (
+                        comment_mapping
+                        and child_id in comment_mapping
+                        and child.type == NEWLINE
+                    ):
                         comment = comment_mapping[child_id]
+                        # if the comment is associated to a newline we want to insert it BEFORE
                         subnodes.append(
                             Leaf(type=comment.type, value=comment.value)
                         )
-                    prev_type = child.type
+                        subnodes.append(
+                            Leaf(
+                                type=child.type,
+                                value=child.value,
+                            )
+                        )
+                    else:
+                        subnodes.append(
+                            Leaf(
+                                type=child.type,
+                                value=child.value,
+                            )
+                        )
+                        if comment_mapping and child_id in comment_mapping:
+                            comment = comment_mapping[child_id]
+                            subnodes.append(
+                                Leaf(type=comment.type, value=comment.value)
+                            )
             node = Node(type=tree.data, children=[])
             for leaf in subnodes:
                 node.append_child(leaf)
