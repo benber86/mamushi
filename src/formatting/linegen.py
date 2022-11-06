@@ -166,6 +166,7 @@ class LineGenerator(Visitor[Line]):
         any_open_brackets = (
             self.current_line.bracket_tracker.any_open_brackets()
         )
+        node.value = add_leading_space_after_hashtag(node.value)
         self.current_line.append(node)
         if not any_open_brackets:
             # regular trailing comment
