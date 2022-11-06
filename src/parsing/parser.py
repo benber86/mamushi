@@ -88,6 +88,7 @@ class Parser(object):
                     node.meta.line : min(
                         latest_comment_line, node.meta.end_line
                     )
+                    + 1
                 ]
             ):
                 continue
