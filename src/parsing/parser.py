@@ -40,6 +40,9 @@ class Parser(object):
     def __init__(self):
         self._comments = []
         self._stand_alone_comments = []
+        self._comment_mapping: CommentMapping = {}
+        self._sa_comment_mapping: StandAloneCommentMapping = defaultdict(list)
+        self._header_comments: List[Token] = []
         self.lalr = self._create_lalr_parser()
 
     def _create_lalr_parser(self):
@@ -93,23 +96,21 @@ class Parser(object):
     def _preprocess(code: str) -> str:
         return re.sub(r"[ |\t]+\n", "\n", code, re.MULTILINE) + "\n"
 
-    def parse(self, code):
+    def _clear_comments(self):
         self._comments.clear()
         self._stand_alone_comments.clear()
+        self._comment_mapping.clear()
+        self._sa_comment_mapping.clear()
+        self._header_comments.clear()
+
+    def parse(self, code):
+        self._clear_comments()
         lark_tree = self.lalr.parse(self._preprocess(code))
-        # TODO: store as property
-        (
-            comment_mappings,
-            sa_comment_mappings,
-        ) = self._generate_comment_associations(lark_tree)
-        pytree = self._to_pytree(
-            lark_tree, comment_mappings, sa_comment_mappings
-        )
+        self._generate_comment_associations(lark_tree)
+        pytree = self._to_pytree(lark_tree)
         return pytree
 
-    def _generate_comment_associations(
-        self, tree: Tree
-    ) -> Tuple[CommentMapping, StandAloneCommentMapping]:
+    def _generate_comment_associations(self, tree: Tree):
         """
         Run a BFS on the tree to find the final leaves of each lines
         where we can append the ignored comments in the final tree
@@ -175,14 +176,17 @@ class Parser(object):
                     queue.append(child)
 
         # create a mapping for trailing comments
-        comment_mapping: CommentMapping = {
+        self._comment_mapping = {
             (t.value, t.type, t.column, t.end_column, t.line): cmt_idx[line]
             for line, t in terminal_leaves.items()
             if line in cmt_idx
         }
 
+        # we need to handle the case where the first line is a comment
+        if comments and comments[0].line == 1 and 1 not in terminal_leaves:
+            self._header_comments = [cmt_idx[1]]
+
         # and one for standalone comments
-        sa_comment_mapping: StandAloneCommentMapping = defaultdict(list)
         for (
             line,
             comment,
@@ -190,22 +194,17 @@ class Parser(object):
             attach_line = line
             while attach_line not in terminal_leaves:
                 attach_line -= 1
+                if attach_line < 0:
+                    self._header_comments.append(comment)
+                    break
+            if attach_line < 0:
+                continue
             t = terminal_leaves[attach_line]
-            sa_comment_mapping[
+            self._sa_comment_mapping[
                 (t.value, t.type, t.column, t.end_column, t.line)
             ].append(comment)
 
-        # we need to handle the case where the first line is a standalone comment
-        if comments and comments[0].line == 1 and 1 not in terminal_leaves:
-            comment_mapping[(-1,)] = cmt_idx[1]
-        return comment_mapping, sa_comment_mapping
-
-    def _to_pytree(
-        self,
-        lark_tree: Tree,
-        comment_mapping: Optional[CommentMapping],
-        sa_comment_mapping: Optional[CommentMapping],
-    ) -> Node:
+    def _to_pytree(self, lark_tree: Tree) -> Node:
         def _is_before_indent(tree: Tree, index: int) -> bool:
             if index + 2 >= len(tree.children):
                 return False
@@ -229,7 +228,7 @@ class Parser(object):
             Convert a Lark tree to Pytree
             """
             subnodes = []
-            sa_comment_queue: List[Token] = []
+            sa_comment_queue: List[Leaf] = []
             for i, child in enumerate(tree.children):
 
                 if isinstance(child, Tree):
@@ -265,11 +264,11 @@ class Parser(object):
                         else ("", "", 0, 0)
                     )
                     if (
-                        comment_mapping
-                        and child_id in comment_mapping
+                        self._comment_mapping
+                        and child_id in self._comment_mapping
                         and child.type == NEWLINE
                     ):
-                        comment = comment_mapping[child_id]
+                        comment = self._comment_mapping[child_id]
                         # if the comment is associated to a newline we want to insert it BEFORE
                         subnodes.append(
                             Leaf(type=comment.type, value=comment.value)
@@ -287,16 +286,22 @@ class Parser(object):
                                 value=child.value,
                             )
                         )
-                        if comment_mapping and child_id in comment_mapping:
-                            comment = comment_mapping[child_id]
+                        if (
+                            self._comment_mapping
+                            and child_id in self._comment_mapping
+                        ):
+                            comment = self._comment_mapping[child_id]
                             subnodes.append(
                                 Leaf(type=comment.type, value=comment.value)
                             )
                     # append the standalone comments last
-                    if sa_comment_mapping and child_id in sa_comment_mapping:
+                    if (
+                        self._sa_comment_mapping
+                        and child_id in self._sa_comment_mapping
+                    ):
                         sa_comment_queue = [
                             Leaf(type=c.type, value=c.value)
-                            for c in sa_comment_mapping[child_id]
+                            for c in self._sa_comment_mapping[child_id]
                         ]
                     # if there's whitespace / indentation coming up
                     # hold on processing the queue
@@ -312,12 +317,14 @@ class Parser(object):
             return node
 
         module = _transform(lark_tree)
-        if comment_mapping and (-1,) in comment_mapping:
+
+        self._header_comments.sort(key=lambda x: x.line, reverse=True)
+        for c in self._header_comments:
             module.children.insert(
                 0,
                 Leaf(
-                    type=comment_mapping[(-1,)].type,
-                    value=comment_mapping[(-1,)].value,
+                    type=c.type,
+                    value=c.value,
                 ),
             )
 
