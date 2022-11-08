@@ -11,7 +11,6 @@ event Event2:
 @external
 def foo():
     pass
-
 # output
 event Event1:
     a: indexed(address)
@@ -20,7 +19,6 @@ event Event1:
 
 event Event2:
     c: indexed(address)
-
 
 # This should not
 

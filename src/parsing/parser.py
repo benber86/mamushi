@@ -60,23 +60,30 @@ class Parser(object):
         )
 
     def _process_ignored_newlines(self, token: Token):
-        lines = token.value.split("\n")
-        suffix = ""
+        consumed = 0
+        nlines = 0
+        ignored_lines = 0
         has_comments = False
+        lines = re.split("\r?\n", token.value)
         for i, line in enumerate(lines):
-            comments = re.match(r"\s*#[^\n]*", line)
-            if comments:
-                has_comments = True
-                self._stand_alone_comments.append(
-                    Token(
-                        type=tokens.STANDALONE_COMMENT,
-                        value=suffix + comments.group(0),
-                        line=token.line + i,
-                    )
-                )  # type: ignore
-                suffix = "\n"
+            consumed += len(line) + 1
+            line = line.lstrip()
+            if not line:
+                nlines += 1
+            if not line.startswith("#"):
+                continue
+            has_comments = True
+            if i == ignored_lines:
+                comment_type = tokens.COMMENT
             else:
-                suffix += "\n"
+                comment_type = tokens.STANDALONE_COMMENT
+            self._stand_alone_comments.append(
+                Token(
+                    type=comment_type,
+                    value=("\n" * max(0, nlines - 1)) + line,
+                    line=token.line + i,
+                )
+            )
         # we clear the newline if we've extracted any comment
         if has_comments:
             token.value = ""
@@ -90,6 +97,7 @@ class Parser(object):
         self._comments.clear()
         self._stand_alone_comments.clear()
         lark_tree = self.lalr.parse(self._preprocess(code))
+        # TODO: store as property
         (
             comment_mappings,
             sa_comment_mappings,
@@ -141,21 +149,11 @@ class Parser(object):
             # or is a leaf, we can skip
             if isinstance(node, Token):
                 continue
-            elif not any(
-                comment_lines[
-                    node.meta.line : min(
-                        latest_comment_line, node.meta.end_line
-                    )
-                    + 1
-                ]
-            ) and not any(
-                standalone_comment_lines[
-                    node.meta.line
-                    - 1 : min(latest_sa_comment_line, node.meta.end_line)
-                    + 1
-                ]
-            ):  # fmt: off
+            # fmt: off
+            elif (not any(comment_lines[node.meta.line:min(latest_comment_line, node.meta.end_line) + 1]) and not
+                    any(standalone_comment_lines[node.meta.line - 1:min(latest_sa_comment_line, node.meta.end_line) + 1])):
                 continue
+            # fmt: on
             for i, child in enumerate(node.children):
                 if (
                     isinstance(child, Token)
@@ -167,7 +165,9 @@ class Parser(object):
                     )
                 ):
                     # we handle the case where a comment is the first node later
-                    if child.type == NEWLINE and i == 0:
+                    if (child.type == NEWLINE and i == 0) or (
+                        child.type == tokens.DEDENT
+                    ):
                         continue
                     else:
                         terminal_leaves[child.line] = child
@@ -206,23 +206,63 @@ class Parser(object):
         comment_mapping: Optional[CommentMapping],
         sa_comment_mapping: Optional[CommentMapping],
     ) -> Node:
+        def _is_before_indent(tree: Tree, index: int) -> bool:
+            if index + 2 >= len(tree.children):
+                return False
+            if not (
+                isinstance(tree.children[index + 1], Tree)
+                and len(tree.children[index + 1].children) > 1
+            ):
+                return False
+            if (
+                isinstance(tree.children[index + 1].children[0], Leaf)
+                and tree.children[index + 1].children[0].type
+                == tokens.WHITESPACE
+                and isinstance(tree.children[index + 1].children[1], Leaf)
+                and tree.children[index + 1].children[1].type == tokens.INDENT
+            ):
+                return True
+            return False
+
         def _transform(tree: Tree):
             """
             Convert a Lark tree to Pytree
             """
             subnodes = []
+            sa_comment_queue: List[Token] = []
             for i, child in enumerate(tree.children):
 
                 if isinstance(child, Tree):
+                    if sa_comment_queue:
+                        for j, subchild in enumerate(child.children):
+                            # process the potential standalone queue, appending htem after all whitespace
+                            if isinstance(
+                                subchild, Tree
+                            ) or subchild.type not in {
+                                tokens.NEWLINE,
+                                tokens.INDENT,
+                            }:
+                                child.children = (
+                                    child.children[:j]
+                                    + sa_comment_queue
+                                    + child.children[j:]
+                                )
+                                sa_comment_queue.clear()
+                                break
                     subnodes.append(_transform(child))
 
                 else:
                     child_id = (
-                        child.value,
-                        child.type,
-                        child.column,
-                        child.end_column,
-                        child.line,
+                        (
+                            child.value,
+                            child.type,
+                            child.column,
+                            child.end_column,
+                            child.line,
+                        )
+                        if child.type
+                        not in {tokens.COMMENT, tokens.STANDALONE_COMMENT}
+                        else ("", "", 0, 0)
                     )
                     if (
                         comment_mapping
@@ -254,10 +294,18 @@ class Parser(object):
                             )
                     # append the standalone comments last
                     if sa_comment_mapping and child_id in sa_comment_mapping:
-                        for comment in sa_comment_mapping[child_id]:
-                            subnodes.append(
-                                Leaf(type=comment.type, value=comment.value)
-                            )
+                        sa_comment_queue = [
+                            Leaf(type=c.type, value=c.value)
+                            for c in sa_comment_mapping[child_id]
+                        ]
+                    # if there's whitespace / indentation coming up
+                    # hold on processing the queue
+                    if _is_before_indent(tree, i):
+                        continue
+                    else:
+                        subnodes += sa_comment_queue
+                        sa_comment_queue.clear()
+
             node = Node(type=tree.data, children=[])
             for leaf in subnodes:
                 node.append_child(leaf)

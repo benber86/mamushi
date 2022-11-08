@@ -175,65 +175,15 @@ class LineGenerator(Visitor[Line]):
             yield from self.line()
         yield from super().visit_default(node)
 
+    def visit_STANDALONE_COMMENT(self, leaf: Leaf) -> Iterator[Line]:
+        if not self.current_line.bracket_tracker.any_open_brackets():
+            yield from self.line()
+        yield from self.visit_default(leaf)
+
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
         # if no content we can yield
         if not node.value.strip():
             yield from super().visit_default(node)
-
-        # comments are parsed along with new lines
-        # we break them down here
-        comments = re.findall(r"\s*#[^\n]*", node.value)
-        if comments:
-            dedent_processed = False
-            for i, comment in enumerate(comments):
-                comment = add_leading_space_after_hashtag(comment)
-                newlines = re.match(r"^\n*", comment)
-                line_count = 0 if not newlines else newlines.span()[1]
-                # if the line starts with a new line, it's a standalone comment
-                if line_count:
-                    # we need to process potential dedentation/indentatino
-                    # if we haven't already and if there's more than 1 leading line return
-                    yield from self.line()
-                    if not dedent_processed and line_count > 1:
-                        already_yielded = True
-                        # if the next sibling is a DEDENT, we have to preemptively and manually dedent
-                        # then remove the DEDENT node
-                        next_sibling = node.next_sibling
-                        while (
-                            next_sibling and next_sibling.type == tokens.DEDENT
-                        ):
-                            if (
-                                already_yielded
-                            ):  # we already yielded earlier, so skip on first run
-                                yield from self.line()
-                                already_yielded = False
-                            yield from self.line(-1)
-                            next_sibling.remove()
-                            next_sibling = node.next_sibling
-                        dedent_processed = True
-                    leaf = Leaf(
-                        value=comment.strip(),
-                        type=tokens.STANDALONE_COMMENT,
-                        prefix="\n" if line_count > 1 else "",
-                    )
-                    self.current_line.append(leaf)
-
-                elif is_pragma(comment) and (
-                    node.prev_sibling is None
-                    and node.parent
-                    and node.parent.type == tokens.MODULE
-                ):
-                    self.current_line.append(
-                        Leaf(
-                            value=remove_double_spaces(comment),
-                            type=tokens.PRAGMA,
-                        )
-                    )
-                    yield from self.line()
-                else:
-                    self.current_line.append(
-                        Leaf(value=comment, type=tokens.COMMENT)
-                    )
 
         if node.value.strip(" \t").endswith("\n\n"):
             # If user inserted multiple blank lines, we reduce to 1
