@@ -12,7 +12,7 @@ from typing import (
 from lark import Tree, Token
 from dataclasses import dataclass, field
 
-from formatting.comments import add_leading_space_after_hashtag
+from formatting.comments import add_leading_space_after_hashtag, settle_prefix
 from formatting.nodes import wrap_in_parentheses, is_atom_with_invisible_parens
 from formatting.strings import (
     normalize_string_quotes,
@@ -167,6 +167,7 @@ class LineGenerator(Visitor[Line]):
             self.current_line.bracket_tracker.any_open_brackets()
         )
         node.value = add_leading_space_after_hashtag(node.value)
+        settle_prefix(node)
         if is_pragma(node.value):
             node.type = tokens.PRAGMA
         self.current_line.append(node)
@@ -175,10 +176,11 @@ class LineGenerator(Visitor[Line]):
             yield from self.line()
         yield from super().visit_default(node)
 
-    def visit_STANDALONE_COMMENT(self, leaf: Leaf) -> Iterator[Line]:
+    def visit_STANDALONE_COMMENT(self, node: Leaf) -> Iterator[Line]:
+        settle_prefix(node)
         if not self.current_line.bracket_tracker.any_open_brackets():
             yield from self.line()
-        yield from self.visit_default(leaf)
+        yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
         # if no content we can yield
@@ -334,6 +336,9 @@ class EmptyLineTracker:
             before = (1 if depth else 2) - self.previous_after
         is_decorator = current_line.is_decorator
         if is_decorator or current_line.is_def:
+            return self._maybe_empty_lines_for_class_or_def(
+                current_line, before
+            )
             if not is_decorator:
                 self.previous_defs.append(depth)
 
@@ -366,6 +371,34 @@ class EmptyLineTracker:
             return (before or 1), 0
 
         return before, 0
+
+    def _maybe_empty_lines_for_class_or_def(
+        self, current_line: Line, before: int
+    ) -> Tuple[int, int]:
+        if not current_line.is_decorator:
+            self.previous_defs.append(current_line.depth)
+        if self.previous_line is None:
+            # Don't insert empty lines before the first line in the file.
+            return 0, 0
+
+        if self.previous_line.is_decorator:
+            return 0, 0
+
+        if self.previous_line.depth < current_line.depth and (
+            self.previous_line.is_def
+        ):
+            return 0, 0
+
+        if (
+            self.previous_line.is_comment
+            and self.previous_line.depth == current_line.depth
+            and before == 0
+        ):
+            return 0, 0
+
+        else:
+            newlines = 1 if current_line.depth else 2
+        return newlines, 0
 
 
 def next_leaf(node: Optional[LN]) -> Optional[Leaf]:
