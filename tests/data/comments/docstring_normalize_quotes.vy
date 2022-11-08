@@ -14,8 +14,6 @@ def a():
 """
 test
 """
-
-
 @internal
 def a():
     """
