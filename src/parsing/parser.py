@@ -67,7 +67,7 @@ class Parser(object):
         nlines = 0
         ignored_lines = 0
         has_comments = False
-        lines = re.split("\r?\n", token.value)
+        lines = re.split("\r?\n", token.value[1:])
         for i, line in enumerate(lines):
             consumed += len(line) + 1
             line = line.lstrip()
@@ -83,10 +83,11 @@ class Parser(object):
             self._stand_alone_comments.append(
                 Token(
                     type=comment_type,
-                    value=("\n" * max(0, nlines - 1)) + line,
+                    value=("\n" * nlines) + line,
                     line=token.line + i,
                 )
             )
+            nlines = 0
         # we clear the newline if we've extracted any comment
         if has_comments:
             token.value = ""
