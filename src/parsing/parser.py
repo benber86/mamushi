@@ -67,7 +67,7 @@ class Parser(object):
         nlines = 0
         ignored_lines = 0
         has_comments = False
-        lines = re.split("\r?\n", token.value[1:])
+        lines = re.split("\r?\n", token.value)
         for i, line in enumerate(lines):
             consumed += len(line) + 1
             line = line.lstrip()
@@ -207,7 +207,7 @@ class Parser(object):
 
     def _to_pytree(self, lark_tree: Tree) -> Node:
         def _is_before_indent(tree: Tree, index: int) -> bool:
-            if index + 2 >= len(tree.children):
+            if index + 1 >= len(tree.children):
                 return False
             if not (
                 isinstance(tree.children[index + 1], Tree)
@@ -215,10 +215,9 @@ class Parser(object):
             ):
                 return False
             if (
-                isinstance(tree.children[index + 1].children[0], Leaf)
-                and tree.children[index + 1].children[0].type
-                == tokens.WHITESPACE
-                and isinstance(tree.children[index + 1].children[1], Leaf)
+                isinstance(tree.children[index + 1].children[0], Token)
+                and tree.children[index + 1].children[0].type == tokens.NEWLINE
+                and isinstance(tree.children[index + 1].children[1], Token)
                 and tree.children[index + 1].children[1].type == tokens.INDENT
             ):
                 return True
