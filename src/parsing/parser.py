@@ -230,6 +230,56 @@ class Parser(object):
             comments[0].value = leading_comment
             return comments
 
+        def _switch_prefixes_before_newlines_tree(
+            child: Tree, sa_comment_queue: List[Leaf]
+        ):
+            # we need to move the leading line returns of the newline
+            # to the last comment when inserting a comment after a newline
+            if (
+                sa_comment_queue
+                and child.children[0]
+                and child.children[0].type == tokens.NEWLINE
+            ):
+                lines = child.children[0].value
+                child.children[0].value = ""
+                sa_comment_queue[-1].value = sa_comment_queue[-1].value + lines
+            return sa_comment_queue
+
+        def _append_to_subnodes_without_indent(
+            child: List[Union[Leaf, Tree]], sa_comment_queue: List[Leaf]
+        ) -> List[Union[Leaf, Tree]]:
+            # we need to move the leading line returns of the newline
+            # to the last comment when inserting a comment after a newline
+            if (
+                sa_comment_queue
+                and child[-1]
+                and child[-1].type == tokens.NEWLINE
+                and (
+                    len(sa_comment_queue[0].value)
+                    - len(sa_comment_queue[0].value.strip())
+                    < 2
+                )
+            ):
+                sa_comment_queue[0].value = sa_comment_queue[0].value.lstrip()
+                child = (
+                    child[: len(child) - 1]
+                    + sa_comment_queue
+                    + child[len(child) - 1 :]
+                )
+            else:
+                child += sa_comment_queue
+            return child
+
+        def _insert_sa_comments(
+            child: Tree, sa_comment_queue: List[Leaf], index: int
+        ):
+            _switch_prefixes_before_newlines_tree(child, sa_comment_queue)
+            child.children = (
+                child.children[:index]
+                + _remove_leading_line(sa_comment_queue)
+                + child.children[index:]
+            )
+
         def _transform(tree: Tree):
             """
             Convert a Lark tree to Pytree
@@ -248,11 +298,7 @@ class Parser(object):
                                 tokens.NEWLINE,
                                 tokens.INDENT,
                             }:
-                                child.children = (
-                                    child.children[:j]
-                                    + _remove_leading_line(sa_comment_queue)
-                                    + child.children[j:]
-                                )
+                                _insert_sa_comments(child, sa_comment_queue, j)
                                 sa_comment_queue.clear()
                                 break
                     subnodes.append(_transform(child))
@@ -315,7 +361,10 @@ class Parser(object):
                     if _is_before_indent(tree, i):
                         continue
                     else:
-                        subnodes += sa_comment_queue
+                        subnodes = _append_to_subnodes_without_indent(
+                            subnodes, sa_comment_queue
+                        )
+                        # subnodes += sa_comment_queue
                         sa_comment_queue.clear()
 
             node = Node(type=tree.data, children=[])
