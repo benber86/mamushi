@@ -90,7 +90,7 @@ class Parser(object):
             nlines = 0
         # we clear the newline if we've extracted any comment
         if has_comments:
-            token.value = ""
+            token.value = "\n" * nlines
         return token
 
     @staticmethod
@@ -223,6 +223,13 @@ class Parser(object):
                 return True
             return False
 
+        def _remove_leading_line(comments: List[Leaf]) -> List[Leaf]:
+            leading_comment = comments[0].value
+            if len(leading_comment) > 0 and leading_comment[0] == "\n":
+                leading_comment = leading_comment[1:]
+            comments[0].value = leading_comment
+            return comments
+
         def _transform(tree: Tree):
             """
             Convert a Lark tree to Pytree
@@ -243,7 +250,7 @@ class Parser(object):
                             }:
                                 child.children = (
                                     child.children[:j]
-                                    + sa_comment_queue
+                                    + _remove_leading_line(sa_comment_queue)
                                     + child.children[j:]
                                 )
                                 sa_comment_queue.clear()
