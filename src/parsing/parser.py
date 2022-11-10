@@ -67,7 +67,6 @@ class Parser(object):
     def _process_ignored_newlines(self, token: Token):
         consumed = 0
         nlines = 0
-        ignored_lines = 0
         has_comments = False
         lines = re.split("\r?\n", token.value)
         for i, line in enumerate(lines):
@@ -78,10 +77,7 @@ class Parser(object):
             if not line.startswith("#"):
                 continue
             has_comments = True
-            if i == ignored_lines:
-                comment_type = tokens.COMMENT
-            else:
-                comment_type = tokens.STANDALONE_COMMENT
+            comment_type = tokens.STANDALONE_COMMENT
             self._stand_alone_comments.append(
                 Token(
                     type=comment_type,
@@ -210,6 +206,10 @@ class Parser(object):
             """Get number of leading line returns"""
             return len(string) - len(string.lstrip("\n"))
 
+        def _get_trailing_lines(string: str) -> int:
+            """Get number of trailin line returns"""
+            return len(string) - len(string.rstrip("\n"))
+
         def _remove_leading_line(comments: List[Leaf]) -> List[Leaf]:
             if comments:
                 leading_comment = comments[0].value
@@ -320,6 +320,11 @@ class Parser(object):
                         # for newlines with no indentation
                         # we just want to move the sa comments before
                         elif child.type == tokens.NEWLINE:
+                            # move trailing line return to the comment
+                            sa_comment_queue[-1].value += "\n" * (
+                                _get_trailing_lines(child.value) - 1
+                            )
+                            child.value = ""
                             subnodes = (
                                 subnodes[:subnode_cursor]
                                 + _remove_leading_line(sa_comment_queue)
