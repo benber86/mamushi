@@ -1,7 +1,7 @@
 # EXPERIMENTAL VYPER PARSER
 # https://github.com/vyperlang/vyper/
 from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple, Union, List
+from typing import Any, Dict, Optional, Tuple, Union, List, Set
 import re
 from lark import Lark, Tree, Token
 from lark.indenter import Indenter
@@ -84,7 +84,7 @@ class Parser(object):
                 Token(
                     type=comment_type,
                     value=("\n" * nlines) + line,
-                    line=token.line + i,
+                    line=token.line + i,  # type: ignore
                 )
             )
             nlines = 0
@@ -159,17 +159,15 @@ class Parser(object):
             for i, child in enumerate(node.children):
                 if (
                     isinstance(child, Token)
-                    and (child.line and child.end_column)
+                    and (child.line and child.end_pos)
                     and (
                         child.line not in terminal_leaves
-                        or child.end_column  # type: ignore
-                        >= terminal_leaves[child.line].end_column
+                        or child.end_pos  # type: ignore
+                        >= terminal_leaves[child.line].end_pos
                     )
                 ):
                     # we handle the case where a comment is the first node later
-                    if (child.type == NEWLINE and i == 0) or (
-                        child.type == tokens.DEDENT
-                    ):
+                    if child.type == NEWLINE and child.line == 1:
                         continue
                     else:
                         terminal_leaves[child.line] = child
@@ -178,7 +176,7 @@ class Parser(object):
 
         # create a mapping for trailing comments
         self._comment_mapping = {
-            (t.value, t.type, t.column, t.end_column, t.line): cmt_idx[line]
+            (t.value, t.type, t.column, t.end_pos, t.line): cmt_idx[line]
             for line, t in terminal_leaves.items()
             if line in cmt_idx
         }
@@ -202,83 +200,36 @@ class Parser(object):
                 continue
             t = terminal_leaves[attach_line]
             self._sa_comment_mapping[
-                (t.value, t.type, t.column, t.end_column, t.line)
+                (t.value, t.type, t.column, t.end_pos, t.line)
             ].append(comment)
 
     def _to_pytree(self, lark_tree: Tree) -> Node:
-        def _is_before_indent(tree: Tree, index: int) -> bool:
-            if index + 1 >= len(tree.children):
-                return False
-            if not (
-                isinstance(tree.children[index + 1], Tree)
-                and len(tree.children[index + 1].children) > 1
-            ):
-                return False
-            if (
-                isinstance(tree.children[index + 1].children[0], Token)
-                and tree.children[index + 1].children[0].type == tokens.NEWLINE
-                and isinstance(tree.children[index + 1].children[1], Token)
-                and tree.children[index + 1].children[1].type == tokens.INDENT
-            ):
-                return True
-            return False
+        def _get_leading_lines(string: str) -> int:
+            """Get number of leading line returns"""
+            return len(string) - len(string.lstrip("\n"))
 
         def _remove_leading_line(comments: List[Leaf]) -> List[Leaf]:
-            leading_comment = comments[0].value
-            if len(leading_comment) > 0 and leading_comment[0] == "\n":
-                leading_comment = leading_comment[1:]
-            comments[0].value = leading_comment
+            if comments:
+                leading_comment = comments[0].value
+                if len(leading_comment) > 0 and leading_comment[0] == "\n":
+                    leading_comment = leading_comment[1:]
+                comments[0].value = leading_comment
             return comments
 
-        def _switch_prefixes_before_newlines_tree(
-            child: Tree, sa_comment_queue: List[Leaf]
-        ):
-            # we need to move the leading line returns of the newline
-            # to the last comment when inserting a comment after a newline
-            if (
-                sa_comment_queue
-                and child.children[0]
-                and child.children[0].type == tokens.NEWLINE
-            ):
-                lines = child.children[0].value
-                child.children[0].value = ""
-                sa_comment_queue[-1].value = sa_comment_queue[-1].value + lines
-            return sa_comment_queue
-
-        def _append_to_subnodes_without_indent(
-            child: List[Union[Leaf, Tree]], sa_comment_queue: List[Leaf]
-        ) -> List[Union[Leaf, Tree]]:
-            # we need to move the leading line returns of the newline
-            # to the last comment when inserting a comment after a newline
-            if (
-                sa_comment_queue
-                and child[-1]
-                and child[-1].type == tokens.NEWLINE
-                and (
-                    len(sa_comment_queue[0].value)
-                    - len(sa_comment_queue[0].value.strip())
-                    < 2
-                )
-            ):
-                sa_comment_queue[0].value = sa_comment_queue[0].value.lstrip()
-                child = (
-                    child[: len(child) - 1]
-                    + sa_comment_queue
-                    + child[len(child) - 1 :]
-                )
-            else:
-                child += sa_comment_queue
-            return child
-
-        def _insert_sa_comments(
-            child: Tree, sa_comment_queue: List[Leaf], index: int
-        ):
-            _switch_prefixes_before_newlines_tree(child, sa_comment_queue)
-            child.children = (
-                child.children[:index]
-                + _remove_leading_line(sa_comment_queue)
-                + child.children[index:]
-            )
+        def _split_comment_queue(
+            queue: List[Leaf],
+        ) -> Tuple[List[Leaf], List[Leaf]]:
+            """
+            if a queue of standalone comments has a newline (2 new lines)
+            we want to keep all comments before that before the dedent
+            and all comments after, after the dedent
+            """
+            before = []
+            while queue:
+                if _get_leading_lines(queue[0].value) > 1:
+                    break
+                before.append(queue.pop(0))
+            return before, queue
 
         def _transform(tree: Tree):
             """
@@ -289,65 +240,62 @@ class Parser(object):
             for i, child in enumerate(tree.children):
 
                 if isinstance(child, Tree):
-                    if sa_comment_queue:
-                        for j, subchild in enumerate(child.children):
-                            # process the potential standalone queue, appending htem after all whitespace
-                            if isinstance(
-                                subchild, Tree
-                            ) or subchild.type not in {
-                                tokens.NEWLINE,
-                                tokens.INDENT,
-                            }:
-                                _insert_sa_comments(child, sa_comment_queue, j)
-                                sa_comment_queue.clear()
-                                break
                     subnodes.append(_transform(child))
 
                 else:
+                    # we store the original cursor of the subnodes
+                    # for when we need to insert comments beforehand (whitespace)
+                    subnode_cursor = len(subnodes)
+
+                    # append current child to list of subnodes
+                    subnodes.append(
+                        Leaf(
+                            type=child.type,
+                            value=child.value,
+                        )
+                    )
+
+                    """ process any potential trailing comments """
                     child_id = (
                         (
                             child.value,
                             child.type,
                             child.column,
-                            child.end_column,
+                            child.end_pos,
                             child.line,
                         )
                         if child.type
                         not in {tokens.COMMENT, tokens.STANDALONE_COMMENT}
                         else ("", "", 0, 0)
                     )
+
                     if (
                         self._comment_mapping
                         and child_id in self._comment_mapping
-                        and child.type == NEWLINE
                     ):
                         comment = self._comment_mapping[child_id]
-                        # if the comment is associated to a newline we want to insert it BEFORE
-                        subnodes.append(
-                            Leaf(type=comment.type, value=comment.value)
-                        )
-                        subnodes.append(
-                            Leaf(
-                                type=child.type,
-                                value=child.value,
+                        # if the current node is a newline, we want the trailing comment BEFORE
+                        if child.type == NEWLINE:
+                            subnodes.insert(
+                                subnode_cursor,
+                                Leaf(type=comment.type, value=comment.value),
                             )
-                        )
-                    else:
-                        subnodes.append(
-                            Leaf(
-                                type=child.type,
-                                value=child.value,
+                            subnode_cursor += 1
+                        # if it's an indent/dedent, we want the trailing comment
+                        # inserted back before the preceding newline
+                        elif child.type in {tokens.INDENT, tokens.DEDENT}:
+                            subnodes.insert(
+                                subnode_cursor - 1,
+                                Leaf(type=comment.type, value=comment.value),
                             )
-                        )
-                        if (
-                            self._comment_mapping
-                            and child_id in self._comment_mapping
-                        ):
-                            comment = self._comment_mapping[child_id]
+                            subnode_cursor += 1
+                        # otherwise append any trailing comments
+                        else:
                             subnodes.append(
                                 Leaf(type=comment.type, value=comment.value)
                             )
-                    # append the standalone comments last
+
+                    """ handle the standalone comments last """
                     if (
                         self._sa_comment_mapping
                         and child_id in self._sa_comment_mapping
@@ -356,15 +304,39 @@ class Parser(object):
                             Leaf(type=c.type, value=c.value)
                             for c in self._sa_comment_mapping[child_id]
                         ]
-                    # if there's whitespace / indentation coming up
-                    # hold on processing the queue
-                    if _is_before_indent(tree, i):
-                        continue
-                    else:
-                        subnodes = _append_to_subnodes_without_indent(
-                            subnodes, sa_comment_queue
-                        )
-                        # subnodes += sa_comment_queue
+
+                        if child.type not in tokens.WHITESPACE:
+                            subnodes += sa_comment_queue
+                        # if there's an indentation, we consider all standalone comments
+                        # to be part of the body
+                        elif child.type == tokens.INDENT:
+                            subnodes += _remove_leading_line(sa_comment_queue)
+                        # for newlines with no indentation
+                        # we just want to move the sa comments before
+                        elif child.type == tokens.NEWLINE:
+                            subnodes = (
+                                subnodes[:subnode_cursor]
+                                + _remove_leading_line(sa_comment_queue)
+                                + subnodes[subnode_cursor + 1 :]
+                            )
+                        else:
+                            before_dedent, after_dedent = _split_comment_queue(
+                                sa_comment_queue.copy()
+                            )
+                            before_dedent = _remove_leading_line(before_dedent)
+                            # we need to move any trailing lines from the newline over to the comment
+                            if after_dedent:
+                                after_dedent[0].value += subnodes[
+                                    subnode_cursor - 1
+                                ].value
+                                subnodes[subnode_cursor - 1].value = ""
+                            subnodes = (
+                                subnodes[: subnode_cursor - 1]
+                                + before_dedent
+                                + subnodes[subnode_cursor:]
+                                + after_dedent
+                            )
+
                         sa_comment_queue.clear()
 
             node = Node(type=tree.data, children=[])
@@ -374,7 +346,7 @@ class Parser(object):
 
         module = _transform(lark_tree)
 
-        self._header_comments.sort(key=lambda x: x.line, reverse=True)
+        self._header_comments.sort(key=lambda x: x.line, reverse=True)  # type: ignore
         for c in self._header_comments:
             module.children.insert(
                 0,

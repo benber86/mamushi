@@ -178,6 +178,10 @@ class LineGenerator(Visitor[Line]):
 
     def visit_STANDALONE_COMMENT(self, node: Leaf) -> Iterator[Line]:
         settle_prefix(node)
+        if node.value.strip(" \t").endswith("\n\n"):
+            # If user inserted multiple blank lines, we reduce to 2
+            node.value = node.value.rstrip() + ("\n\n")
+
         if not self.current_line.bracket_tracker.any_open_brackets():
             yield from self.line()
         yield from self.visit_default(node)
