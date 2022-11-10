@@ -27,6 +27,7 @@ class PythonIndenter(Indenter):
 
 CommentMapping = Dict[Tuple[Any, ...], Token]
 StandAloneCommentMapping = Dict[Tuple[Any, ...], List[Token]]
+DedentCount = Dict[Tuple[Any, ...], int]
 
 
 class Parser(object):
@@ -44,6 +45,7 @@ class Parser(object):
         self._sa_comment_mapping: StandAloneCommentMapping = defaultdict(list)
         self._header_comments: List[Token] = []
         self.lalr = self._create_lalr_parser()
+        self._dedent_counts: DedentCount = defaultdict(int)
 
     def _create_lalr_parser(self):
         return Lark.open_from_package(
@@ -103,6 +105,7 @@ class Parser(object):
         self._comment_mapping.clear()
         self._sa_comment_mapping.clear()
         self._header_comments.clear()
+        self._dedent_counts.clear()
 
     def parse(self, code):
         self._clear_comments()
@@ -110,6 +113,16 @@ class Parser(object):
         self._generate_comment_associations(lark_tree)
         pytree = self._to_pytree(lark_tree)
         return pytree
+
+    @staticmethod
+    def _token_id(token: Token) -> Tuple[Any, ...]:
+        return (
+            token.value,
+            token.type,
+            token.column,
+            token.end_pos,
+            token.line,
+        )
 
     def _generate_comment_associations(self, tree: Tree):
         """
@@ -171,12 +184,16 @@ class Parser(object):
                         continue
                     else:
                         terminal_leaves[child.line] = child
+                    # because lark will parse different dedent tokens with similar
+                    # coordinates, we need to keep track of where we stand
+                    if child.type == tokens.DEDENT:
+                        self._dedent_counts[self._token_id(child)] += 1
                 else:
                     queue.append(child)
 
         # create a mapping for trailing comments
         self._comment_mapping = {
-            (t.value, t.type, t.column, t.end_pos, t.line): cmt_idx[line]
+            self._token_id(t): cmt_idx[line]
             for line, t in terminal_leaves.items()
             if line in cmt_idx
         }
@@ -199,11 +216,13 @@ class Parser(object):
             if attach_line < 0:
                 continue
             t = terminal_leaves[attach_line]
-            self._sa_comment_mapping[
-                (t.value, t.type, t.column, t.end_pos, t.line)
-            ].append(comment)
+            key_token = (t.value, t.type, t.column, t.end_pos, t.line)
+            self._sa_comment_mapping[key_token].append(comment)
 
     def _to_pytree(self, lark_tree: Tree) -> Node:
+
+        local_dedent_counter: DedentCount = defaultdict(int)
+
         def _get_leading_lines(string: str) -> int:
             """Get number of leading line returns"""
             return len(string) - len(string.lstrip("\n"))
@@ -257,13 +276,7 @@ class Parser(object):
 
                     """ process any potential trailing comments """
                     child_id = (
-                        (
-                            child.value,
-                            child.type,
-                            child.column,
-                            child.end_pos,
-                            child.line,
-                        )
+                        self._token_id(child)
                         if child.type
                         not in {tokens.COMMENT, tokens.STANDALONE_COMMENT}
                         else ("", "", 0, 0)
@@ -300,10 +313,20 @@ class Parser(object):
                         self._sa_comment_mapping
                         and child_id in self._sa_comment_mapping
                     ):
+
                         sa_comment_queue = [
                             Leaf(type=c.type, value=c.value)
                             for c in self._sa_comment_mapping[child_id]
                         ]
+
+                        # we use the counter for repeat visit, we will always associate
+                        # with final dedent (for instance after multiple nested ifs)
+                        local_dedent_counter[child_id] += 1
+                        if (
+                            local_dedent_counter[child_id]
+                            < self._dedent_counts[child_id]
+                        ):
+                            continue
 
                         if child.type not in tokens.WHITESPACE:
                             subnodes += sa_comment_queue
@@ -324,19 +347,23 @@ class Parser(object):
                                 sa_comment_queue.copy()
                             )
                             before_dedent = _remove_leading_line(before_dedent)
-                            # we need to move any trailing lines from the newline over to the comment
-                            if after_dedent:
-                                after_dedent[0].value += subnodes[
-                                    subnode_cursor - 1
-                                ].value
-                                subnodes[subnode_cursor - 1].value = ""
+                            if (
+                                subnodes[subnode_cursor - 1].type
+                                == tokens.NEWLINE
+                            ):
+                                # we need to move any trailing lines from the newline over to the comment
+                                if after_dedent:
+                                    after_dedent[0].value += subnodes[
+                                        subnode_cursor - 1
+                                    ].value
+                                    subnodes[subnode_cursor - 1].value = ""
+
                             subnodes = (
-                                subnodes[: subnode_cursor - 1]
+                                subnodes[:subnode_cursor]
                                 + before_dedent
                                 + subnodes[subnode_cursor:]
                                 + after_dedent
                             )
-
                         sa_comment_queue.clear()
 
             node = Node(type=tree.data, children=[])
