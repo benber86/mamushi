@@ -8,8 +8,6 @@ def foo():
 # TEST
 # output
 ### ---- TEST BEGIN ---- ###
-
-
 @external
 def foo():
     self.c()

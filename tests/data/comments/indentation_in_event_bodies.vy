@@ -17,8 +17,10 @@ event Event1:
     b: uint256
     # This should be indented
 
+
 event Event2:
     c: indexed(address)
+
 
 # This should not
 
