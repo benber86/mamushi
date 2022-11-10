@@ -1,15 +1,11 @@
 from formatting.format import format_tree
 from parsing.comparator import compare_ast
-from parsing.parser import parse_string
+from parsing.parser import Parser
 from utils.files import gen_python_files_in_dir
 
 from typing import List
 from pathlib import Path
 import click
-
-
-def format_from_string(string: str, line_length: int = 80) -> str:
-    return format_tree(parse_string(string), line_length)
 
 
 @click.command()
@@ -61,10 +57,11 @@ def main(
         else:
             raise FileNotFoundError(f"invalid path: {s}")
 
+    parser = Parser()
     for source in sources:
         with open(source, "r") as fp:
             contract = fp.read()
-        res = format_from_string(contract)
+        res = format_tree(parser.parse(contract), 80)
         if safe and not compare_ast(contract, res):
             raise AssertionError("Formatting changed the AST, aborting")
         if in_place:

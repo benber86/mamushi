@@ -25,6 +25,40 @@ Specify a list of *.vy files or directories and output to console after formatti
 
 `mamushi [SRC]`
 
-### Options
+### Notes
 
+---------
+#### AST Safety
 By default, mamushi will compare the AST of your reformatted code with that of the original to ensure that the changes applied remain strictly formal. The option can be disabled with `--safe False` to speed things up.
+
+
+#### Trailing commas
+
+When handling expressions split by commas, mamushi follows Black's [default behavior](https://test-black.readthedocs.io/en/style-guide/style_guide/trailing_commas.html).
+
+Mamushi also uses Black's [magic trailing comma](https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#pragmatism) to give user the option to collapse a comma-separated expression into one line if possible. If a trailing comma is added, mamushi will always explode the expression. This can have important consequences for the commenting of your code. Consider the following two examples:
+
+This code snippet:
+
+```
+self.b(0, # amount to send
+       msg.sender, # sender
+       True, # refund ?
+        )
+```
+
+formats to the following with a trailing comma after the last argument (`True`):
+
+```
+self.b(
+    0,  # amount to send
+    msg.sender,  # sender
+    True,  # refund ?
+)
+```
+
+but if the trailing comma is removed, the line will be collapsed to:
+
+```
+self.b(0, msg.sender, True)  # amount to send  # sender  # refund ?
+```

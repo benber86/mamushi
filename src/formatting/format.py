@@ -8,15 +8,13 @@ def format_tree(ast: Node, max_line_length: int = 80) -> str:
     elt = EmptyLineTracker()
     empty_line = Line()
     after = 0
-    dst_contents = ""
+    dst_contents = []
 
     for current_line in lg.visit(ast):
-        for _ in range(after):
-            dst_contents += str(empty_line)
+        dst_contents.append(str(empty_line) * after)
         before, after = elt.maybe_empty_lines(current_line)
-        for _ in range(before):
-            dst_contents += str(empty_line)
+        dst_contents.append(str(empty_line) * before)
         for line in split_line(current_line, line_length=max_line_length):
-            dst_contents += str(line)
+            dst_contents.append(str(line))
 
-    return dst_contents
+    return "".join(dst_contents)

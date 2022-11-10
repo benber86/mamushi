@@ -110,16 +110,6 @@ def whitespace(leaf: Leaf) -> str:
         # no space for signed numbers
         return NO
 
-    elif (
-        v.isnumeric()
-        or v in {tokens.PLUS, tokens.MINUS}
-        or p.type in tokens.OPERATIONS
-    ):
-        prevp = preceding_leaf(p)
-        if prevp and prevp.parent and prevp.parent.type == tokens.GET_ITEM:
-            # no space in slice access
-            return NO
-
     return SPACE
 
 

@@ -17,9 +17,13 @@ def test():
     return xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx(
         (((((((((((((((((((((((((((a,)))))))))))))))))))))))))))
     )(
-        (b(c))
+        (
+            b(
+                c,
+            )
+        )
     )(
-        d
+        d,
     )(
         (((((((((((((((((((((((e,)))))))))))))))))))))))
     )()

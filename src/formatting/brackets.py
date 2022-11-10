@@ -109,6 +109,10 @@ class BracketTracker:
         self.previous = leaf
         self.maybe_increment_for_loop_variable(leaf)
 
+    def any_open_brackets(self) -> bool:
+        """Return True if there is an yet unmatched open bracket on the line."""
+        return bool(self.bracket_match)
+
     def max_delimiter_priority(
         self, exclude: Iterable[LeafID] = ()
     ) -> Priority:
