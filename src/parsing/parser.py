@@ -133,24 +133,12 @@ class Parser(object):
         # handle trailing comments first
         comments = list(self._comments)
         comments.sort(key=lambda c: c.line)
-        latest_comment_line = comments[-1].line if comments else 0
         cmt_idx = {c.line: c for c in comments}
-        comment_lines = [
-            cmt_idx[i] if i in cmt_idx else None
-            for i in range(latest_comment_line + 1)
-        ]
 
         # stand alone comments
         standalone_comments = list(self._stand_alone_comments)
         standalone_comments.sort(key=lambda c: c.line)
-        latest_sa_comment_line = (
-            standalone_comments[-1].line if standalone_comments else 0
-        )
         sa_cmt_idx = {c.line: c for c in standalone_comments}
-        standalone_comment_lines = [
-            sa_cmt_idx[i] if i in sa_cmt_idx else None
-            for i in range(latest_sa_comment_line + 1)
-        ]
 
         queue = [tree]
         terminal_leaves: Dict[
@@ -164,11 +152,6 @@ class Parser(object):
             # or is a leaf, we can skip
             if isinstance(node, Token):
                 continue
-            # fmt: off
-            elif (not any(comment_lines[node.meta.line:min(latest_comment_line, node.meta.end_line) + 1]) and not
-                    any(standalone_comment_lines[node.meta.line - 1:min(latest_sa_comment_line, node.meta.end_line) + 1])):
-                continue
-            # fmt: on
             for i, child in enumerate(node.children):
                 if (
                     isinstance(child, Token)

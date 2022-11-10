@@ -325,7 +325,7 @@ class EmptyLineTracker:
         return before, after
 
     def _maybe_empty_lines(self, current_line: Line) -> Tuple[int, int]:
-        max_allowed = 1
+        max_allowed = 2
         if current_line.leaves:
             # Consume the first leaf's extra newlines.
             first_leaf = current_line.leaves[0]
