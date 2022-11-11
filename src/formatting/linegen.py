@@ -187,13 +187,11 @@ class LineGenerator(Visitor[Line]):
         yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
-        # if no content we can yield
-        if not node.value.strip():
-            yield from super().visit_default(node)
-
         if node.value.strip(" \t").endswith("\n\n"):
             # If user inserted multiple blank lines, we reduce to 1
             nextl = next_leaf(node)
+            while nextl and nextl.type in tokens.WHITESPACE:
+                nextl = next_leaf(nextl)
             if nextl:
                 nextl.prefix = "\n" + nextl.prefix
             else:
@@ -325,7 +323,7 @@ class EmptyLineTracker:
         return before, after
 
     def _maybe_empty_lines(self, current_line: Line) -> Tuple[int, int]:
-        max_allowed = 1
+        max_allowed = 2
         if current_line.leaves:
             # Consume the first leaf's extra newlines.
             first_leaf = current_line.leaves[0]

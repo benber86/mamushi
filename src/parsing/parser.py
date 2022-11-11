@@ -67,7 +67,6 @@ class Parser(object):
     def _process_ignored_newlines(self, token: Token):
         consumed = 0
         nlines = 0
-        ignored_lines = 0
         has_comments = False
         lines = re.split("\r?\n", token.value)
         for i, line in enumerate(lines):
@@ -78,10 +77,7 @@ class Parser(object):
             if not line.startswith("#"):
                 continue
             has_comments = True
-            if i == ignored_lines:
-                comment_type = tokens.COMMENT
-            else:
-                comment_type = tokens.STANDALONE_COMMENT
+            comment_type = tokens.STANDALONE_COMMENT
             self._stand_alone_comments.append(
                 Token(
                     type=comment_type,
@@ -133,24 +129,12 @@ class Parser(object):
         # handle trailing comments first
         comments = list(self._comments)
         comments.sort(key=lambda c: c.line)
-        latest_comment_line = comments[-1].line if comments else 0
         cmt_idx = {c.line: c for c in comments}
-        comment_lines = [
-            cmt_idx[i] if i in cmt_idx else None
-            for i in range(latest_comment_line + 1)
-        ]
 
         # stand alone comments
         standalone_comments = list(self._stand_alone_comments)
         standalone_comments.sort(key=lambda c: c.line)
-        latest_sa_comment_line = (
-            standalone_comments[-1].line if standalone_comments else 0
-        )
         sa_cmt_idx = {c.line: c for c in standalone_comments}
-        standalone_comment_lines = [
-            sa_cmt_idx[i] if i in sa_cmt_idx else None
-            for i in range(latest_sa_comment_line + 1)
-        ]
 
         queue = [tree]
         terminal_leaves: Dict[
@@ -164,11 +148,6 @@ class Parser(object):
             # or is a leaf, we can skip
             if isinstance(node, Token):
                 continue
-            # fmt: off
-            elif (not any(comment_lines[node.meta.line:min(latest_comment_line, node.meta.end_line) + 1]) and not
-                    any(standalone_comment_lines[node.meta.line - 1:min(latest_sa_comment_line, node.meta.end_line) + 1])):
-                continue
-            # fmt: on
             for i, child in enumerate(node.children):
                 if (
                     isinstance(child, Token)
@@ -226,6 +205,10 @@ class Parser(object):
         def _get_leading_lines(string: str) -> int:
             """Get number of leading line returns"""
             return len(string) - len(string.lstrip("\n"))
+
+        def _get_trailing_lines(string: str) -> int:
+            """Get number of trailin line returns"""
+            return len(string) - len(string.rstrip("\n"))
 
         def _remove_leading_line(comments: List[Leaf]) -> List[Leaf]:
             if comments:
@@ -337,6 +320,11 @@ class Parser(object):
                         # for newlines with no indentation
                         # we just want to move the sa comments before
                         elif child.type == tokens.NEWLINE:
+                            # move trailing line return to the comment
+                            sa_comment_queue[-1].value += "\n" * (
+                                _get_trailing_lines(child.value) - 1
+                            )
+                            child.value = ""
                             subnodes = (
                                 subnodes[:subnode_cursor]
                                 + _remove_leading_line(sa_comment_queue)
