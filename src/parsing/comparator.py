@@ -8,12 +8,15 @@ from parsing.parser import PythonIndenter
 _plain_lark_grammar = None
 
 
-class NullifyDocstringsAndNewLines(Transformer_InPlaceRecursive):
+class NullifyStringsAndNewLines(Transformer_InPlaceRecursive):
     def DOCSTRING(self, args):
         return Token(type_=tokens.DOCSTRING, value="")
 
     def _NEWLINE(self, args):
         return Token(type_=tokens.NEWLINE, value="")
+
+    def STRING(self, args):
+        return Token(type_=tokens.STRING, value="")
 
 
 def plain_grammar():
@@ -26,7 +29,7 @@ def plain_grammar():
             parser="lalr",
             start="module",
             postlex=PythonIndenter(),
-            keep_all_tokens=tokens,
+            keep_all_tokens=False,
             maybe_placeholders=False,
         )
 
@@ -44,6 +47,6 @@ def compare_ast(src: str, dest: str) -> bool:
     """
     src_tree = parse_string_to_tokenless_ast(src)
     dest_tree = parse_string_to_tokenless_ast(dest)
-    NullifyDocstringsAndNewLines().transform(src_tree)
-    NullifyDocstringsAndNewLines().transform(dest_tree)
+    NullifyStringsAndNewLines().transform(src_tree)
+    NullifyStringsAndNewLines().transform(dest_tree)
     return src_tree == dest_tree
