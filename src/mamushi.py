@@ -1,13 +1,44 @@
+from datetime import datetime
+import io
+import sys
 from formatting.format import format_tree
 from parsing.comparator import compare_ast
 from parsing.parser import Parser
-from utils.files import gen_python_files_in_dir, normalize_path_maybe_ignore
+from utils.files import gen_python_files_in_dir
 import traceback
-from typing import List, Sized
+from typing import List, Sized, Optional
 from pathlib import Path
 import click
-from utils.output import out
+from utils.output import out, diff, color_diff
 from utils.report import Report, Changed
+
+
+def format_stdin_to_stdout(src: str, dst: str):
+    """Format file on stdin. Return True if changed.
+
+    If content is None, it's read from sys.stdin.
+
+    If `write_back` is YES, write reformatted code back to stdout. If it is DIFF,
+    write a diff to stdout. The `mode` argument is passed to
+    :func:`format_file_contents`.
+    """
+    then = datetime.utcnow()
+
+    encoding, newline = "utf-8", ""
+
+    f = io.TextIOWrapper(
+        sys.stdout.buffer,
+        encoding=encoding,
+        newline=newline,
+        write_through=True,
+    )
+    now = datetime.utcnow()
+    src_name = f"STDIN\t{then} +0000"
+    dst_name = f"STDOUT\t{now} +0000"
+    d = diff(src, dst, src_name, dst_name)
+    d = color_diff(d)
+    f.write(d)
+    f.detach()
 
 
 def path_empty(
@@ -27,12 +58,12 @@ def reformat(
     parser: Parser,
     safe: bool,
     in_place: bool,
+    check: bool,
     line_length: int,
     report: "Report",
 ):
     with open(src, "r") as fp:
         contract = fp.read()
-    changed = Changed.NO
     try:
         src_content = parser.parse(contract)
     except Exception as exc:
@@ -40,14 +71,18 @@ def reformat(
             traceback.print_exc()
         report.failed(src, str(exc))
     res = format_tree(src_content, line_length)
-    if res == src_content:
-        return False
-    else:
-        changed = Changed.YES
+
+    changed = Changed.NO if res == contract else Changed.YES
+
     if safe and not compare_ast(contract, res):
         report.failed(src, "Formatting changed the AST, aborting")
         return False
     report.done(src, changed)
+    if diff:
+        format_stdin_to_stdout(contract, res)
+        return True
+    if check:
+        return False
 
     if in_place:
         with open(src, "w") as fp:
@@ -144,7 +179,15 @@ def main(
             raise FileNotFoundError(f"invalid path: {s}")
     parser = Parser()
     for source in sources:
-        reformat(source, parser, safe, in_place, line_length, report)
+        reformat(
+            src=source,
+            parser=parser,
+            safe=safe,
+            in_place=in_place and not (check or diff),
+            check=check,
+            line_length=line_length,
+            report=report,
+        )
 
     error_msg = "Oh no! 💥 💔 💥"
     if verbose or not quiet:
