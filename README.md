@@ -2,20 +2,22 @@
 
 
 # Mamushi
-
+[![image](https://img.shields.io/pypi/v/mamushi.svg)](https://pypi.org/project/mamushi/)
 [![Build Status](https://github.com/benber86/mamushi/actions/workflows/test.yml/badge.svg)](https://github.com/benber86/mamushi/actions)
 [![codecov](https://codecov.io/github/benber86/mamushi/branch/main/graph/badge.svg?token=WF0YO4ACIT)](https://codecov.io/github/benber86/mamushi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 
 
 Mamushi is a fork of the popular [Black](https://github.com/psf/black) formatter adapted to the [Vyper](https://github.com/vyperlang/vyper/) programming language. Mamushi reformats your Vyper contracts in a readable and consistent way.
 
 
-### Installation
+## Installation
 
-`pip install -e .`
+`pip install mamushi`
 
-### Usage
+## Usage
 
 Search all *.vy files and overwrite them after formatting:
 
@@ -30,9 +32,13 @@ Output the result to console instead of overwriting:
 
 `mamushi --in-place False`
 
-### Notes
 
----------
+## Notes
+
+#### Line length
+
+The default line length is 80. Line length can be adjusted by using the `--line-length` option.
+
 #### AST Safety
 By default, mamushi will compare the AST of your reformatted code with that of the original to ensure that the changes applied remain strictly formal. The option can be disabled with `--safe False` to speed things up.
 
@@ -67,3 +73,13 @@ but if the trailing comma is removed, the line will be collapsed to:
 ```
 self.b(0, msg.sender, True)  # amount to send  # sender  # refund ?
 ```
+
+## Future developments
+
+- [ ] Multiprocessing when processing multiple files
+- [ ] Configuration files
+- [ ] Improve Windows compatibility
+- [ ] Handle versioning of Vyper/lark grammar
+- [ ] Refactoring comment handling in the parser
+- [ ] Add .gitignore / exclude / include support
+
