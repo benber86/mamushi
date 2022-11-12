@@ -124,7 +124,7 @@ _simple_stmt: (declaration
 
 declaration: variable ["=" _expr]
 skip_assign: "_"
-multiple_assign: (variable_access | skip_assign) ("," (variable_access | skip_assign))+
+multiple_assign: (variable_access | skip_assign) ("," (variable_access | skip_assign))+ [","]
 assign: (variable_access | multiple_assign | "(" multiple_assign ")" ) "=" _expr
 // NOTE: Keep these in sync with bin_op below
 ?aug_operator: "+"  -> add
