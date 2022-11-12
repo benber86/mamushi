@@ -288,9 +288,7 @@ class LineGenerator(Visitor[Line]):
         self.visit_if_stmt = partial(
             v, keywords={"if", "else", "elif"}, parens={"if", "elif"}
         )
-        self.visit_for_stmt = partial(
-            v, keywords={"for", "else"}, parens={"for"}
-        )
+        self.visit_for_stmt = partial(v, keywords={"for", "else"}, parens={""})
         self.visit_function_sig = partial(v, keywords={"def"}, parens=set())
 
         for stmt in SIMPLE_STATEMENTS | ASSIGNMENTS:
