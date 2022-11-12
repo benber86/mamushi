@@ -1,3 +1,4 @@
+from .__version__ import __version__
 from datetime import datetime
 import io
 import sys
@@ -6,7 +7,7 @@ from parsing.comparator import compare_ast
 from parsing.parser import Parser
 from utils.files import gen_vyper_files_in_dir
 import traceback
-from typing import List, Sized
+from typing import List
 from pathlib import Path
 import click
 from utils.output import out, diff, color_diff
