@@ -4,9 +4,9 @@ import sys
 from formatting.format import format_tree
 from parsing.comparator import compare_ast
 from parsing.parser import Parser
-from utils.files import gen_python_files_in_dir
+from utils.files import gen_vyper_files_in_dir
 import traceback
-from typing import List, Sized, Optional
+from typing import List, Sized
 from pathlib import Path
 import click
 from utils.output import out, diff, color_diff
@@ -41,22 +41,11 @@ def format_stdin_to_stdout(src: str, dst: str):
     f.detach()
 
 
-def path_empty(
-    src: Sized, msg: str, quiet: bool, verbose: bool, ctx: click.Context
-) -> None:
-    """
-    Exit if there is no `src` provided for formatting
-    """
-    if not src:
-        if verbose or not quiet:
-            out(msg)
-        ctx.exit(0)
-
-
 def reformat(
     src: Path,
     parser: Parser,
     safe: bool,
+    diff: bool,
     in_place: bool,
     check: bool,
     line_length: int,
@@ -66,10 +55,14 @@ def reformat(
         contract = fp.read()
     try:
         src_content = parser.parse(contract)
-    except Exception as exc:
+    except Exception:
         if report.verbose:
             traceback.print_exc()
-        report.failed(src, str(exc))
+        report.failed(
+            src,
+            "Unable to parse input file, are you sure the Vyper code is valid?",
+        )
+        return True
     res = format_tree(src_content, line_length)
 
     changed = Changed.NO if res == contract else Changed.YES
@@ -78,11 +71,11 @@ def reformat(
         report.failed(src, "Formatting changed the AST, aborting")
         return False
     report.done(src, changed)
+    if check:
+        return False
     if diff:
         format_stdin_to_stdout(contract, res)
         return True
-    if check:
-        return False
 
     if in_place:
         with open(src, "w") as fp:
@@ -102,7 +95,7 @@ def reformat(
 )
 @click.option(
     "--in-place",
-    is_flag=True,
+    type=bool,
     default=True,
     show_default=True,
     help="Overwrite files in place",
@@ -110,7 +103,7 @@ def reformat(
 @click.option(
     "--safe",
     type=bool,
-    default=False,
+    default=True,
     show_default=True,
     help="Compares input and output AST to ensure similarity",
 )
@@ -171,7 +164,7 @@ def main(
     for s in src:
         p = Path(s)
         if p.is_dir():
-            sources.extend(gen_python_files_in_dir(p))
+            sources.extend(gen_vyper_files_in_dir(p))
         elif p.is_file():
             # if a file was explicitly given, we don't care about its extension
             sources.append(p)
@@ -183,6 +176,7 @@ def main(
             src=source,
             parser=parser,
             safe=safe,
+            diff=diff,
             in_place=in_place and not (check or diff),
             check=check,
             line_length=line_length,
@@ -192,6 +186,8 @@ def main(
     error_msg = "Oh no! 💥 💔 💥"
     if verbose or not quiet:
         out(error_msg if report.return_code else "All done! ✨ 🍰 ✨")
+        if in_place:
+            click.echo(str(report), err=True)
     ctx.exit(report.return_code)
 
 

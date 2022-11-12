@@ -45,8 +45,9 @@ class Report:
             if self.verbose:
                 if changed is Changed.NO:
                     msg = f"{src} already well formatted, good job."
-                else:
-                    msg = f"{src} wasn't modified on disk since last run."
+                # TODO: implement with caching
+                # else:
+                #     msg = f"{src} wasn't modified on disk since last run."
                 out(msg, bold=False)
             self.same_count += 1
 
@@ -54,10 +55,6 @@ class Report:
         """Increment the counter for failed reformatting. Write out a message."""
         err(f"error: cannot format {src}: {message}")
         self.failure_count += 1
-
-    def path_ignored(self, path: Path, message: str) -> None:
-        if self.verbose:
-            out(f"{path} ignored: {message}", bold=False)
 
     @property
     def return_code(self) -> int:
