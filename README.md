@@ -19,11 +19,16 @@ Mamushi is a fork of the popular [Black](https://github.com/psf/black) formatter
 
 Search all *.vy files and overwrite them after formatting:
 
-`mamushi --in-place`
+`mamushi`
 
 Specify a list of *.vy files or directories and output to console after formatting:
 
 `mamushi [SRC]`
+
+Output the result to console instead of overwriting:
+
+
+`mamushi --in-place False`
 
 ### Notes
 

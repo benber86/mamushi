@@ -1,5 +1,5 @@
 import pytest
-from mamushi import gen_python_files_in_dir
+from mamushi import gen_vyper_files_in_dir
 
 
 def test_gen_python_files_in_dir(tmp_path):
@@ -12,5 +12,5 @@ def test_gen_python_files_in_dir(tmp_path):
             fake_file.write_text("test")
             if i * j:
                 valid_files.append(fake_file)
-    found_files = gen_python_files_in_dir(tmp_path)
+    found_files = gen_vyper_files_in_dir(tmp_path)
     assert set(valid_files) == set(found_files)
