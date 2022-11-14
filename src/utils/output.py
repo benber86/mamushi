@@ -3,7 +3,6 @@
 The double calls are for patching purposes in tests.
 """
 
-import json
 import tempfile
 from typing import Any, Optional
 
