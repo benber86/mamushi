@@ -5,9 +5,9 @@ from typing import Any, Dict, Optional, Tuple, Union, List, Set
 import re
 from lark import Lark, Tree, Token
 from lark.indenter import Indenter
-from parsing import tokens
-from parsing.pytree import Leaf, Node
-from parsing.tokens import (
+from mamushi.parsing import tokens
+from mamushi.parsing.pytree import Leaf, Node
+from mamushi.parsing.tokens import (
     OPENING_BRACKETS,
     CLOSING_BRACKETS,
     NEWLINE,
@@ -49,9 +49,9 @@ class Parser(object):
 
     def _create_lalr_parser(self):
         return Lark.open_from_package(
-            "parsing",
+            "mamushi",
             "grammar.lark",
-            ("/",),
+            ("parsing/",),
             parser="lalr",
             start="module",
             postlex=PythonIndenter(),

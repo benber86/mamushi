@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Tuple, Union
-from parsing import tokens
+from mamushi.parsing import tokens
 from typing import Final
-from parsing.pytree import Leaf, Node
+from mamushi.parsing.pytree import Leaf, Node
 
 
 # types

@@ -7,7 +7,7 @@ import sys
 from functools import lru_cache
 from typing import List, Pattern, Final
 
-from parsing.pytree import Leaf
+from mamushi.parsing.pytree import Leaf
 
 FIRST_NON_WHITESPACE_RE: Final = re.compile(r"\s*\t+\s*(\S)")
 

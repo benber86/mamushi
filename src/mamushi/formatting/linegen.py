@@ -12,19 +12,25 @@ from typing import (
 from lark import Tree, Token
 from dataclasses import dataclass, field
 
-from formatting.comments import add_leading_space_after_hashtag, settle_prefix
-from formatting.nodes import wrap_in_parentheses, is_atom_with_invisible_parens
-from formatting.strings import (
+from mamushi.formatting.comments import (
+    add_leading_space_after_hashtag,
+    settle_prefix,
+)
+from mamushi.formatting.nodes import (
+    wrap_in_parentheses,
+    is_atom_with_invisible_parens,
+)
+from mamushi.formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
     fix_docstring,
     is_pragma,
     remove_double_spaces,
 )
-from parsing.pytree import Leaf, Node
-from formatting.lines import Line
-from parsing.tokens import SIMPLE_STATEMENTS, ASSIGNMENTS_SIGNS
-from parsing import tokens
+from mamushi.parsing.pytree import Leaf, Node
+from mamushi.formatting.lines import Line
+from mamushi.parsing.tokens import SIMPLE_STATEMENTS, ASSIGNMENTS_SIGNS
+from mamushi.parsing import tokens
 import re
 
 T = TypeVar("T")

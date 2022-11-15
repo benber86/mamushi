@@ -1,7 +1,7 @@
 from typing import Union, List, Tuple
 
-from parsing import tokens
-from parsing.pytree import Leaf, Node
+from mamushi.parsing import tokens
+from mamushi.parsing.pytree import Leaf, Node
 
 LN = Union[Leaf, Node]
 

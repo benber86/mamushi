@@ -1,7 +1,5 @@
-from mamushi import Parser
+from mamushi.parsing.parser import Parser
 import pytest
-from typing import Dict, Any
-import click
 from click.testing import CliRunner
 
 

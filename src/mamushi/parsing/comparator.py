@@ -1,9 +1,9 @@
 from lark import Token
 from lark.visitors import Transformer_InPlaceRecursive
 
-from parsing import tokens
+from mamushi.parsing import tokens
 from lark import Lark, Tree
-from parsing.parser import PythonIndenter
+from mamushi.parsing.parser import PythonIndenter
 
 _plain_lark_grammar = None
 

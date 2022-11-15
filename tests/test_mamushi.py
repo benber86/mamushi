@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 import mamushi
-from utils.output import dump_to_file
+from mamushi.utils.output import dump_to_file
 
 from tests.const import MINIMAL_CONTRACT, DATA_DIR
 from tests.reader import read_data

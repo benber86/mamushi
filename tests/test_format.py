@@ -1,6 +1,6 @@
 from tests.reader import all_data_cases, read_data, all_data
 import pytest
-from mamushi import format_tree
+from mamushi.formatting.format import format_tree
 
 test_cases = [
     (category, case)
