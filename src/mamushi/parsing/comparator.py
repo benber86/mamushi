@@ -1,9 +1,9 @@
 from lark import Token
 from lark.visitors import Transformer_InPlaceRecursive
 
-from parsing import tokens
+from mamushi.parsing import tokens
 from lark import Lark, Tree
-from parsing.parser import PythonIndenter
+from mamushi.parsing.parser import PythonIndenter
 
 _plain_lark_grammar = None
 
@@ -23,9 +23,9 @@ def plain_grammar():
     global _plain_lark_grammar
     if _plain_lark_grammar is None:
         return Lark.open_from_package(
-            "parsing",
+            "mamushi",
             "grammar.lark",
-            ("/",),
+            ["parsing"],
             parser="lalr",
             start="module",
             postlex=PythonIndenter(),

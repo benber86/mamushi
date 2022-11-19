@@ -1,6 +1,6 @@
 import re
 
-from parsing.pytree import Leaf
+from mamushi.parsing.pytree import Leaf
 
 
 def add_leading_space_after_hashtag(comment: str) -> str:

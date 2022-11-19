@@ -7,7 +7,7 @@ from pathlib import Path
 
 from click import style
 
-from utils.output import out, err
+from mamushi.utils.output import out, err
 
 
 class Changed(Enum):

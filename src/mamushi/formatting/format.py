@@ -1,6 +1,6 @@
-from formatting.linegen import LineGenerator, EmptyLineTracker
-from formatting.lines import Line, split_line
-from parsing.pytree import Node
+from mamushi.formatting.linegen import LineGenerator, EmptyLineTracker
+from mamushi.formatting.lines import Line, split_line
+from mamushi.parsing.pytree import Node
 
 
 def format_tree(ast: Node, max_line_length: int = 80) -> str:

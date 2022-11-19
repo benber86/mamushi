@@ -15,15 +15,19 @@ from typing import (
     cast,
     Set,
 )
-from formatting.whitespace import whitespace
-from formatting.brackets import BracketTracker, COMMA_PRIORITY, DOT_PRIORITY
-from formatting.nodes import (
+from mamushi.formatting.whitespace import whitespace
+from mamushi.formatting.brackets import (
+    BracketTracker,
+    COMMA_PRIORITY,
+    DOT_PRIORITY,
+)
+from mamushi.formatting.nodes import (
     ensure_visible,
     is_one_sequence_between,
     replace_child,
 )
-from parsing import tokens
-from parsing.pytree import Leaf, Node
+from mamushi.parsing import tokens
+from mamushi.parsing.pytree import Leaf, Node
 
 
 LeafID = int

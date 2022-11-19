@@ -1,7 +1,7 @@
 from typing import Final
 from typing import Optional, TypeVar, Union
-from parsing import tokens
-from parsing.pytree import Node, Leaf
+from mamushi.parsing import tokens
+from mamushi.parsing.pytree import Node, Leaf
 
 T = TypeVar("T")
 LN = Union[Leaf, Node]
