@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Any, Dict, Optional, Tuple, Union, List, Set
 import re
 from lark import Lark, Tree, Token
-from lark.indenter import Indenter
+from mamushi.parsing.indenter import Indenter, PythonIndenter
 from mamushi.parsing import tokens
 from mamushi.parsing.pytree import Leaf, Node
 from mamushi.parsing.tokens import (
@@ -14,15 +14,6 @@ from mamushi.parsing.tokens import (
     INDENT,
     DEDENT,
 )
-
-
-class PythonIndenter(Indenter):
-    NL_type = NEWLINE
-    OPEN_PAREN_types = list(OPENING_BRACKETS)
-    CLOSE_PAREN_types = list(CLOSING_BRACKETS)
-    INDENT_type = INDENT
-    DEDENT_type = DEDENT
-    tab_len = 4
 
 
 CommentMapping = Dict[Tuple[Any, ...], Token]
@@ -40,55 +31,34 @@ class Parser(object):
 
     def __init__(self):
         self._comments = []
-        self._stand_alone_comments = []
+        self._all_newlines = []
         self._comment_mapping: CommentMapping = {}
-        self._sa_comment_mapping: StandAloneCommentMapping = defaultdict(list)
+        self._orphan_comment_mapping: StandAloneCommentMapping = defaultdict(
+            list
+        )
         self._header_comments: List[Token] = []
+        self.indenter = PythonIndenter()
         self.lalr = self._create_lalr_parser()
-        self._dedent_counts: DedentCount = defaultdict(int)
 
     def _create_lalr_parser(self):
         return Lark.open_from_package(
             "mamushi",
             "grammar.lark",
-            ("parsing/",),
+            ["parsing"],
             parser="lalr",
             start="module",
-            postlex=PythonIndenter(),
+            postlex=self.indenter,
             keep_all_tokens=True,
             propagate_positions=True,
             lexer_callbacks={
                 "COMMENT": self._comments.append,
-                "_NEWLINE": self._process_ignored_newlines,
+                "_NEWLINE": self._record_all_newlines,
             },
             maybe_placeholders=False,
         )
 
-    def _process_ignored_newlines(self, token: Token):
-        consumed = 0
-        nlines = 0
-        has_comments = False
-        lines = re.split("\r?\n", token.value)
-        for i, line in enumerate(lines):
-            consumed += len(line) + 1
-            line = line.lstrip()
-            if not line:
-                nlines += 1
-            if not line.startswith("#"):
-                continue
-            has_comments = True
-            comment_type = tokens.STANDALONE_COMMENT
-            self._stand_alone_comments.append(
-                Token(
-                    type=comment_type,
-                    value=("\n" * nlines) + line,
-                    line=token.line + i,  # type: ignore
-                )
-            )
-            nlines = 0
-        # we clear the newline if we've extracted any comment
-        if has_comments:
-            token.value = "\n" * nlines
+    def _record_all_newlines(self, token: Token):
+        self._all_newlines.append(token)
         return token
 
     @staticmethod
@@ -97,11 +67,10 @@ class Parser(object):
 
     def _clear_comments(self):
         self._comments.clear()
-        self._stand_alone_comments.clear()
         self._comment_mapping.clear()
-        self._sa_comment_mapping.clear()
+        self._orphan_comment_mapping.clear()
         self._header_comments.clear()
-        self._dedent_counts.clear()
+        self._all_newlines.clear()
 
     def parse(self, code):
         self._clear_comments()
@@ -109,6 +78,29 @@ class Parser(object):
         self._generate_comment_associations(lark_tree)
         pytree = self._to_pytree(lark_tree)
         return pytree
+
+    @staticmethod
+    def _break_down_comments(t: Token) -> List[Token]:
+        res = []
+        nlines = 0
+        newline = t.value.removeprefix("\n").rstrip(" \t").removesuffix("\n")
+        for i, line in enumerate(re.split("\n", newline)):
+            line = line.lstrip()
+            if not line:
+                nlines += 1
+            if not line.startswith("#"):
+                continue
+            res.append(
+                Token(
+                    type=tokens.STANDALONE_COMMENT,
+                    value=("\n" * nlines) + line,
+                    line=t.line + i,  # type: ignore
+                )
+            )
+            nlines = 0
+        if res:
+            res[-1].value += "\n" * nlines
+        return res
 
     @staticmethod
     def _token_id(token: Token) -> Tuple[Any, ...]:
@@ -126,15 +118,25 @@ class Parser(object):
         where we can append the ignored comments in the final tree
         return a mapping of leaves to comment
         """
+
         # handle trailing comments first
-        comments = list(self._comments)
+        comments = self._comments
         comments.sort(key=lambda c: c.line)
         cmt_idx = {c.line: c for c in comments}
 
-        # stand alone comments
-        standalone_comments = list(self._stand_alone_comments)
-        standalone_comments.sort(key=lambda c: c.line)
-        sa_cmt_idx = {c.line: c for c in standalone_comments}
+        # retrieve orphaned comments from ignored newlines
+        # these are usually comments in between arguments to a call
+        orphaned_comments = list(
+            set(self._all_newlines) - set(self.indenter.processed_newlines)
+        )
+        orphaned_comments = [
+            el
+            for t in orphaned_comments
+            for el in self._break_down_comments(t)
+            if "#" in t
+        ]
+        orphaned_comments.sort(key=lambda c: c.line)
+        o_cmt_idx = {c.line: c for c in orphaned_comments}
 
         queue = [tree]
         terminal_leaves: Dict[
@@ -163,10 +165,6 @@ class Parser(object):
                         continue
                     else:
                         terminal_leaves[child.line] = child
-                    # because lark will parse different dedent tokens with similar
-                    # coordinates, we need to keep track of where we stand
-                    if child.type == tokens.DEDENT:
-                        self._dedent_counts[self._token_id(child)] += 1
                 else:
                     queue.append(child)
 
@@ -181,11 +179,11 @@ class Parser(object):
         if comments and comments[0].line == 1 and 1 not in terminal_leaves:
             self._header_comments = [cmt_idx[1]]
 
-        # and one for standalone comments
+        # handle the orphaned comments last
         for (
             line,
             comment,
-        ) in sa_cmt_idx.items():  # sa_cmt_idx is sorted (p3.6+)
+        ) in o_cmt_idx.items():  # o_cmt_idx is sorted (p3.6+)
             attach_line = line
             while attach_line not in terminal_leaves:
                 attach_line -= 1
@@ -196,43 +194,9 @@ class Parser(object):
                 continue
             t = terminal_leaves[attach_line]
             key_token = (t.value, t.type, t.column, t.end_pos, t.line)
-            self._sa_comment_mapping[key_token].append(comment)
+            self._orphan_comment_mapping[key_token].append(comment)
 
     def _to_pytree(self, lark_tree: Tree) -> Node:
-
-        local_dedent_counter: DedentCount = defaultdict(int)
-
-        def _get_leading_lines(string: str) -> int:
-            """Get number of leading line returns"""
-            return len(string) - len(string.lstrip("\n"))
-
-        def _get_trailing_lines(string: str) -> int:
-            """Get number of trailin line returns"""
-            return len(string) - len(string.rstrip("\n"))
-
-        def _remove_leading_line(comments: List[Leaf]) -> List[Leaf]:
-            if comments:
-                leading_comment = comments[0].value
-                if len(leading_comment) > 0 and leading_comment[0] == "\n":
-                    leading_comment = leading_comment[1:]
-                comments[0].value = leading_comment
-            return comments
-
-        def _split_comment_queue(
-            queue: List[Leaf],
-        ) -> Tuple[List[Leaf], List[Leaf]]:
-            """
-            if a queue of standalone comments has a newline (2 new lines)
-            we want to keep all comments before that before the dedent
-            and all comments after, after the dedent
-            """
-            before = []
-            while queue:
-                if _get_leading_lines(queue[0].value) > 1:
-                    break
-                before.append(queue.pop(0))
-            return before, queue
-
         def _transform(tree: Tree):
             """
             Convert a Lark tree to Pytree
@@ -249,13 +213,29 @@ class Parser(object):
                     # for when we need to insert comments beforehand (whitespace)
                     subnode_cursor = len(subnodes)
 
-                    # append current child to list of subnodes
-                    subnodes.append(
-                        Leaf(
-                            type=child.type,
-                            value=child.value,
+                    if child.type in tokens.WHITESPACE and "#" in child.value:
+                        subnodes.append(
+                            Leaf(
+                                type=child.type,
+                                value="",
+                            )
                         )
-                    )
+                        for comment in self._break_down_comments(child):
+                            subnodes.append(
+                                Leaf(
+                                    type=tokens.STANDALONE_COMMENT,
+                                    value=comment.value,
+                                )
+                            )
+
+                    else:
+                        # append current child to list of subnodes
+                        subnodes.append(
+                            Leaf(
+                                type=child.type,
+                                value=child.value,
+                            )
+                        )
 
                     """ process any potential trailing comments """
                     child_id = (
@@ -291,67 +271,20 @@ class Parser(object):
                                 Leaf(type=comment.type, value=comment.value)
                             )
 
-                    """ handle the standalone comments last """
+                    # handle the standalone comments last
                     if (
-                        self._sa_comment_mapping
-                        and child_id in self._sa_comment_mapping
+                        self._orphan_comment_mapping
+                        and child_id in self._orphan_comment_mapping
                     ):
 
                         sa_comment_queue = [
                             Leaf(type=c.type, value=c.value)
-                            for c in self._sa_comment_mapping[child_id]
+                            for c in self._orphan_comment_mapping[child_id]
                         ]
-
-                        # we use the counter for repeat visit, we will always associate
-                        # with final dedent (for instance after multiple nested ifs)
-                        local_dedent_counter[child_id] += 1
-                        if (
-                            local_dedent_counter[child_id]
-                            < self._dedent_counts[child_id]
-                        ):
-                            continue
 
                         if child.type not in tokens.WHITESPACE:
                             subnodes += sa_comment_queue
-                        # if there's an indentation, we consider all standalone comments
-                        # to be part of the body
-                        elif child.type == tokens.INDENT:
-                            subnodes += _remove_leading_line(sa_comment_queue)
-                        # for newlines with no indentation
-                        # we just want to move the sa comments before
-                        elif child.type == tokens.NEWLINE:
-                            # move trailing line return to the comment
-                            sa_comment_queue[-1].value += "\n" * (
-                                _get_trailing_lines(child.value) - 1
-                            )
-                            child.value = ""
-                            subnodes = (
-                                subnodes[:subnode_cursor]
-                                + _remove_leading_line(sa_comment_queue)
-                                + subnodes[subnode_cursor + 1 :]
-                            )
-                        else:
-                            before_dedent, after_dedent = _split_comment_queue(
-                                sa_comment_queue.copy()
-                            )
-                            before_dedent = _remove_leading_line(before_dedent)
-                            if (
-                                subnodes[subnode_cursor - 1].type
-                                == tokens.NEWLINE
-                            ):
-                                # we need to move any trailing lines from the newline over to the comment
-                                if after_dedent:
-                                    after_dedent[0].value += subnodes[
-                                        subnode_cursor - 1
-                                    ].value
-                                    subnodes[subnode_cursor - 1].value = ""
 
-                            subnodes = (
-                                subnodes[:subnode_cursor]
-                                + before_dedent
-                                + subnodes[subnode_cursor:]
-                                + after_dedent
-                            )
                         sa_comment_queue.clear()
 
             node = Node(type=tree.data, children=[])

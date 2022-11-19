@@ -99,6 +99,11 @@ class LineGenerator(Visitor[Line]):
                 node.value = normalize_string_quotes(node.value)
             if node.type not in tokens.WHITESPACE:
                 self.current_line.append(node)
+            if (
+                node.type == tokens.STANDALONE_COMMENT
+                and not self.current_line.bracket_tracker.any_open_brackets()
+            ):
+                yield from self.line()
         yield from super().visit_default(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
@@ -183,25 +188,19 @@ class LineGenerator(Visitor[Line]):
         yield from super().visit_default(node)
 
     def visit_STANDALONE_COMMENT(self, node: Leaf) -> Iterator[Line]:
+        node.value = re.sub(r"\n\n+", "\n\n", node.value)
+        node.value = add_leading_space_after_hashtag(node.value)
         settle_prefix(node)
-        if node.value.strip(" \t").endswith("\n\n"):
-            # If user inserted multiple blank lines, we reduce to 2
-            node.value = node.value.rstrip() + ("\n\n")
-
         if not self.current_line.bracket_tracker.any_open_brackets():
             yield from self.line()
         yield from self.visit_default(node)
 
     def visit__NEWLINE(self, node: Leaf) -> Iterator[Line]:
-        if node.value.strip(" \t").endswith("\n\n"):
-            # If user inserted multiple blank lines, we reduce to 1
-            nextl = next_leaf(node)
-            while nextl and nextl.type in tokens.WHITESPACE:
-                nextl = next_leaf(nextl)
-            if nextl:
-                nextl.prefix = "\n" + nextl.prefix
-            else:
-                yield from self.line()
+        nextl = next_leaf_add_newline(node)
+        if nextl:
+            nextl.prefix = "\n" + nextl.prefix
+        else:
+            yield from self.line()
         yield from super().visit_default(node)
 
     def visit__INDENT(self, node: Leaf) -> Iterator[Line]:
@@ -211,9 +210,9 @@ class LineGenerator(Visitor[Line]):
 
     def visit__DEDENT(self, node: Leaf) -> Iterator[Line]:
         """Decrease indentation level, maybe yield a line."""
-        # The current line might still wait for trailing comments.  At DEDENT time
-        # there won't be any (they would be prefixes on the preceding NEWLINE).
-        # Emit the line then.
+        nextl = next_leaf_add_newline(node)
+        if nextl:
+            nextl.prefix = "\n" + nextl.prefix
         yield from self.line()
 
         # While DEDENT has no value, its prefix may contain standalone comments
@@ -345,22 +344,6 @@ class EmptyLineTracker:
             return self._maybe_empty_lines_for_class_or_def(
                 current_line, before
             )
-            if not is_decorator:
-                self.previous_defs.append(depth)
-
-            if self.previous_line and self.previous_line.is_decorator:
-                # Don't insert empty lines between decorators.
-                return 0, 0
-
-            # 1 space for structs, events, enums
-            newlines = 1
-            if is_decorator:
-                # functions are all decorated and we use 2 spaces
-                newlines += 1
-            if current_line.depth:
-                newlines -= 1
-            newlines -= self.previous_after
-            return newlines, 0
 
         if current_line.is_flow_control:
             return before, 1
@@ -507,3 +490,17 @@ def maybe_make_parens_invisible_in_atom(
         return False
 
     return True
+
+
+def get_next_non_whitespace_leaf(node: Leaf) -> Optional[Leaf]:
+    nextl = next_leaf(node)
+    while nextl and nextl.type in tokens.WHITESPACE:
+        nextl = next_leaf(nextl)
+    return nextl
+
+
+def next_leaf_add_newline(node: Leaf) -> Optional[Leaf]:
+    if node.value.strip(" \t").endswith("\n\n"):
+        # If user inserted multiple blank lines, we reduce to 1
+        return get_next_non_whitespace_leaf(node)
+    return None
