@@ -34,13 +34,14 @@ class Indenter(PostLex, ABC):
     def create_dent_on_next_line(
         type: str, value: str, newline: Token, lines: int
     ):
+        endline = newline.end_line if newline.end_line else 0
         return Token(
             type,
             value,
             newline.start_pos,
-            newline.end_line + lines,
+            endline + lines,
             0,
-            newline.end_line + lines,
+            endline + lines,
             0,
             0,
         )
