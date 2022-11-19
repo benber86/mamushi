@@ -57,6 +57,11 @@ class Indenter(PostLex, ABC):
                 prev_tab_len = cur_tab_len
             else:
                 res[-1] += "\n" + element
+        # if the final element is whitespace, merge it with penultimate
+        if not res[-1].strip() and len(res) > 1:
+            res[-2] += res[-1]
+            res.pop()
+
         return res
 
     @staticmethod
@@ -66,13 +71,16 @@ class Indenter(PostLex, ABC):
         nl, ind = line.split("#", 1)
         return nl, "#" + ind
 
+    def _get_indent(self, token):
+        indent_str = token.rsplit("\n", 1)[1]  # Tabs and spaces
+        return indent_str.count(" ") + indent_str.count("\t") * self.tab_len
+
     def handle_NL(self, token: Token) -> Iterator[Token]:
         if self.paren_level > 0:
             return
 
-        self.processed_newlines.append(token)
-        indent_str = token.rsplit("\n", 1)[1]  # Tabs and spaces
-        indent = indent_str.count(" ") + indent_str.count("\t") * self.tab_len
+        self.processed_newlines.append(token)  # Tabs and spaces
+        indent = self._get_indent(token)
 
         if indent > self.indent_level[-1]:
             # nl, ind = self.split_into_indents(token.value)
@@ -84,18 +92,36 @@ class Indenter(PostLex, ABC):
         elif indent < self.indent_level[-1]:
             dedent_captions = self.split_into_dedents(token)
             index = 0
-            yield Token.new_borrow_pos(self.NL_type, "", token)
+            newline = False  # whether we've created the leading newline or not
+            newline_caption = ""
             while indent < self.indent_level[-1]:
-                self.indent_level.pop()
                 caption = (
                     dedent_captions[index]
                     if index < len(dedent_captions)
                     else ""
                 )
+                index += 1
+
+                if not newline:
+                    # as long as we haven't hit the dedent, we add the comments
+                    # to the newline
+                    cmt_indent = (
+                        self._get_indent(caption.split("#")[0])
+                        if "#" in caption
+                        else indent
+                    )
+                    if cmt_indent >= self.indent_level[-1]:
+                        newline_caption += caption
+                        continue
+
+                    yield Token.new_borrow_pos(
+                        self.NL_type, newline_caption, token
+                    )
+                    newline = True
+                self.indent_level.pop()
                 yield self.create_dent_on_next_line(
                     self.DEDENT_type, caption, token, 1
                 )
-                index += 1
 
             if indent != self.indent_level[-1]:
                 raise DedentError(
