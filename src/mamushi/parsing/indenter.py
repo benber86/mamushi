@@ -115,7 +115,7 @@ class Indenter(PostLex, ABC):
                         continue
 
                     yield Token.new_borrow_pos(
-                        self.NL_type, newline_caption, token
+                        self.NL_type, newline_caption.rstrip(), token
                     )
                     newline = True
                 self.indent_level.pop()
