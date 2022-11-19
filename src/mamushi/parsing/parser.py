@@ -1,20 +1,15 @@
 # EXPERIMENTAL VYPER PARSER
 # https://github.com/vyperlang/vyper/
-from collections import defaultdict
-from typing import Any, Dict, Optional, Tuple, Union, List, Set
 import re
-from lark import Lark, Tree, Token
-from mamushi.parsing.indenter import Indenter, PythonIndenter
-from mamushi.parsing import tokens
-from mamushi.parsing.pytree import Leaf, Node
-from mamushi.parsing.tokens import (
-    OPENING_BRACKETS,
-    CLOSING_BRACKETS,
-    NEWLINE,
-    INDENT,
-    DEDENT,
-)
+from collections import defaultdict
+from typing import Any, Dict, List, Tuple
 
+from lark import Lark, Token, Tree
+
+from mamushi.parsing import tokens
+from mamushi.parsing.indenter import PythonIndenter
+from mamushi.parsing.pytree import Leaf, Node
+from mamushi.parsing.tokens import NEWLINE
 
 CommentMapping = Dict[Tuple[Any, ...], Token]
 StandAloneCommentMapping = Dict[Tuple[Any, ...], List[Token]]
@@ -63,7 +58,7 @@ class Parser(object):
 
     @staticmethod
     def _preprocess(code: str) -> str:
-        return re.sub(r"[ |\t]+\n", "\n", code, re.MULTILINE) + "\n"
+        return re.sub(r"[ \t]+\n", "\n", code, re.MULTILINE) + "\n"
 
     def _clear_comments(self):
         self._comments.clear()
