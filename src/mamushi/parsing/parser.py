@@ -256,15 +256,6 @@ class Parser(object):
                                 Leaf(type=comment.type, value=comment.value),
                             )
                             subnode_cursor += 1
-                        # if it's an indent/dedent, we want the trailing comment
-                        # inserted back before the preceding newline
-                        elif child.type in {tokens.INDENT, tokens.DEDENT}:
-                            subnodes.insert(
-                                subnode_cursor - 1,
-                                Leaf(type=comment.type, value=comment.value),
-                            )
-                            subnode_cursor += 1
-                        # otherwise append any trailing comments
                         else:
                             subnodes.append(
                                 Leaf(type=comment.type, value=comment.value)
