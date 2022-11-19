@@ -1,7 +1,8 @@
 event Event1:
     a: indexed(address)
     b: uint256
-# This should be indented
+    # This should be indented
+# This should not
 
 event Event2:
     c: indexed(address)
@@ -15,15 +16,14 @@ def foo():
 event Event1:
     a: indexed(address)
     b: uint256
-    # This should be indented
 
 
+# This should be indented
 event Event2:
     c: indexed(address)
 
 
 # This should not
-
 
 @external
 def foo():

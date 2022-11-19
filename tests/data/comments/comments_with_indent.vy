@@ -31,6 +31,7 @@ def a():  # test 2
 def b():  # test 4
 
     # test 5
+
     self.b(0, 2, 3)
 
 

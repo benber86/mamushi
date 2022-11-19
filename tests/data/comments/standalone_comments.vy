@@ -14,4 +14,6 @@ def foo():
     ### TEST ###
     # test #
     a: uint256 = 0  # test
-    # TEST
+
+
+# TEST

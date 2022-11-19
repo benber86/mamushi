@@ -23,9 +23,7 @@ def a():
 # output
 # @version 0.3.7
 
-
 # header com
-
 
 event B:
     z: uint256
