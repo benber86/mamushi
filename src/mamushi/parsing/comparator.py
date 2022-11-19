@@ -23,9 +23,9 @@ def plain_grammar():
     global _plain_lark_grammar
     if _plain_lark_grammar is None:
         return Lark.open_from_package(
-            "parsing",
+            "mamushi",
             "grammar.lark",
-            ("/",),
+            ["parsing"],
             parser="lalr",
             start="module",
             postlex=PythonIndenter(),
