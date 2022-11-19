@@ -12,4 +12,4 @@ test_cases = [
 @pytest.mark.parametrize("category,case", test_cases)
 def test_format(case: str, category: str, parser):
     source, expected = read_data(category, case)
-    assert format_tree(parser.parse(source)) == expected
+    assert format_tree(parser.parse(source)).strip() == expected.strip()
