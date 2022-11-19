@@ -4,4 +4,4 @@ exclude_lines =
     raise CannotSplit
     except ValueError
 omit =
-    src/parsing/pytree.py
+    src/mamushi/parsing/pytree.py
