@@ -202,7 +202,6 @@ class Parser(object):
             Convert a Lark tree to Pytree
             """
             subnodes = []
-            sa_comment_queue: List[Leaf] = []
             for i, child in enumerate(tree.children):
 
                 if isinstance(child, Tree):
@@ -237,7 +236,7 @@ class Parser(object):
                             )
                         )
 
-                    """ process any potential trailing comments """
+                    # process any potential trailing comments
                     child_id = (
                         self._token_id(child)
                         if child.type
@@ -276,16 +275,10 @@ class Parser(object):
                         self._orphan_comment_mapping
                         and child_id in self._orphan_comment_mapping
                     ):
-
-                        sa_comment_queue = [
+                        subnodes += [
                             Leaf(type=c.type, value=c.value)
                             for c in self._orphan_comment_mapping[child_id]
                         ]
-
-                        if child.type not in tokens.WHITESPACE:
-                            subnodes += sa_comment_queue
-
-                        sa_comment_queue.clear()
 
             node = Node(type=tree.data, children=[])
             for leaf in subnodes:
