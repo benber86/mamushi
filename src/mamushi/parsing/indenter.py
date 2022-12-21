@@ -56,11 +56,13 @@ class Indenter(PostLex, ABC):
             )
             if (cur_tab_len < prev_tab_len) or i == 0:
                 res.append("\n" + element)
-                prev_tab_len = (
-                    cur_tab_len
-                    if len(element.strip()) > 0
-                    else prev_tab_len - self.tab_len
-                )
+                if len(element.strip()) > 0:
+                    prev_tab_len = cur_tab_len
+                else:
+                    prev_tab_len = prev_tab_len - self.tab_len
+                    # the newline will get added to a newline token and is gone
+                    # need to add it back as prefix to next comment
+                    res[-1] += "\n"
             else:
                 res[-1] += "\n" + element
         # if the final element is whitespace, merge it with penultimate
