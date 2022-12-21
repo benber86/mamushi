@@ -11,5 +11,5 @@ def add_leading_space_after_hashtag(comment: str) -> str:
 def settle_prefix(comment: Leaf):
     """Puts the leading line returns in prefix"""
     stripped = comment.value.lstrip("\n")
-    comment.prefix = "\n" * (len(comment.value) - len(stripped))
+    comment.prefix += "\n" * (len(comment.value) - len(stripped))
     comment.value = stripped
