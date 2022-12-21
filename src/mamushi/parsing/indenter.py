@@ -50,12 +50,17 @@ class Indenter(PostLex, ABC):
         res = []
         prev_tab_len = self.indent_level[-1]
         for i, element in enumerate(line.split("\n")[1:]):
+            pre_comment = element.split("#")[0]
             cur_tab_len = (
-                element.count(" ") + element.count("\t") * self.tab_len
+                pre_comment.count(" ") + pre_comment.count("\t") * self.tab_len
             )
-            if cur_tab_len < prev_tab_len or i == 0:
+            if (cur_tab_len < prev_tab_len) or i == 0:
                 res.append("\n" + element)
-                prev_tab_len = cur_tab_len
+                prev_tab_len = (
+                    cur_tab_len
+                    if len(element.strip()) > 0
+                    else prev_tab_len - self.tab_len
+                )
             else:
                 res[-1] += "\n" + element
         # if the final element is whitespace, merge it with penultimate
