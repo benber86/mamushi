@@ -215,10 +215,6 @@ class LineGenerator(Visitor[Line]):
             nextl.prefix = "\n" + nextl.prefix
         yield from self.line()
 
-        # While DEDENT has no value, its prefix may contain standalone comments
-        # that belong to the current indentation level.  Get 'em.
-        yield from self.visit_default(node)
-
         # Finally, emit the dedent.
         yield from self.line(-1)
 
