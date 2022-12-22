@@ -44,16 +44,22 @@ def whitespace(leaf: Leaf) -> str:
         prevp = preceding_leaf(p)
         if not prevp or prevp.type in tokens.OPENING_BRACKETS:
             return NO
-        elif prevp:
-            if prevp.type == tokens.TILDE:
-                return NO
-            # kwargs with expr assignment
-            if (
-                prevp.type == tokens.EQUAL
-                and prevp.parent
-                and prevp.parent.type == tokens.KWARG
-            ):
-                return NO
+        if prevp.type == tokens.TILDE:
+            return NO
+        # kwargs with expr assignment
+        if (
+            prevp.type == tokens.EQUAL
+            and prevp.parent
+            and prevp.parent.type == tokens.KWARG
+        ):
+            return NO
+
+        elif (
+            prevp.parent
+            and prevp.parent.type in tokens.UNARY
+            and prevp.type in tokens.MATH_OPERATORS
+        ):
+            return NO
 
     elif p.type == tokens.KWARG:
         if prev.type != tokens.COMMA:
