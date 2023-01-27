@@ -255,8 +255,11 @@ class LineGenerator(Visitor[Line]):
         """A statement without nested statements."""
         if node.type in ASSIGNMENTS:
             normalize_invisible_parens(node, parens_after=ASSIGNMENTS_SIGNS)
-        if node.type in tokens.ASSERTS:
+        elif node.type in tokens.ASSERTS:
             normalize_invisible_parens(node, parens_after={"assert", ","})
+        elif node.type == tokens.RETURN_STMT:
+            normalize_invisible_parens(node, parens_after={"return"})
+
         is_body_like = node.parent and (
             # TODO: handle this more cleanly
             node.parent.type not in tokens.BODIES
