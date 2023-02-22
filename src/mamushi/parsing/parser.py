@@ -198,7 +198,6 @@ class Parser(object):
             """
             subnodes = []
             for i, child in enumerate(tree.children):
-
                 if isinstance(child, Tree):
                     subnodes.append(_transform(child))
 

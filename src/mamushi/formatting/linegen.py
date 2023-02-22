@@ -111,7 +111,6 @@ class LineGenerator(Visitor[Line]):
         docstring = normalize_string_quotes(node.value)
         # don't further format header docstrings
         if node.parent and node.parent.type != tokens.MODULE:
-
             quote_char = docstring[0]
             # A natural way to remove the outer quotes is to do:
             #   docstring = docstring.strip(quote_char)

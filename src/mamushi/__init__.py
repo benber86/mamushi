@@ -86,6 +86,7 @@ def reformat(
 
 
 @click.command()
+@click.version_option(__version__)
 @click.option(
     "-l",
     "--line-length",
