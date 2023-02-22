@@ -94,7 +94,6 @@ def test_line_length(runner):
 
 
 def test_check_multiple_files(runner):
-
     result = runner.invoke(
         mamushi.main, ["--check", str(DATA_DIR / "imports")]
     )
@@ -104,7 +103,6 @@ def test_check_multiple_files(runner):
 
 
 def test_invalid_file(runner):
-
     result = runner.invoke(mamushi.main, ["--check", "AAAAAAAAAAAAAAAA.x"])
     assert result.exit_code == 2
     assert "does not exist" in result.stderr
