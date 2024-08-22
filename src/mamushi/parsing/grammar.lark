@@ -186,7 +186,7 @@ body: _NEWLINE _INDENT ([COMMENT] _NEWLINE | _stmt)+ _DEDENT
 cond_exec: expr ":" body
 default_exec: body
 if_stmt: "if" cond_exec ("elif" cond_exec)* ["else" ":" default_exec]
-loop_variable: NAME ":" type
+loop_variable: NAME [":" type]
 loop_iterator: expr
 for_stmt: "for" loop_variable "in" loop_iterator ":" body
 
