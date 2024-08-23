@@ -126,7 +126,8 @@ exports_decl: "exports" ":" (attribute | tuple)
 // Conversely, the rest of the statements require a newline to be considered complete
 // (as they do not create a new block)
 _stmt: ( if_stmt | for_stmt ) [COMMENT]
-     | (declaration
+     | _simple_stmt
+_simple_stmt: (declaration
        | assign
        | aug_assign
        | return_stmt
@@ -182,7 +183,7 @@ assert_stmt: _ASSERT expr -> assert
            | _ASSERT expr "," expr -> assert_with_reason
            | _ASSERT expr "," _UNREACHABLE -> assert_unreachable
 
-body: _NEWLINE _INDENT ([COMMENT] _NEWLINE | _stmt)+ _DEDENT
+body: _simple_stmt | _NEWLINE _INDENT ([COMMENT] _NEWLINE | _stmt)+ _DEDENT
 cond_exec: expr ":" body
 default_exec: body
 if_stmt: "if" cond_exec ("elif" cond_exec)* ["else" ":" default_exec]
@@ -334,6 +335,7 @@ _number: DEC_NUMBER
 BOOL.2: "True" | "False"
 
 ELLIPSIS: "..."
+_WS: /[ \t\f\r\n]*/
 
 // TODO: Remove Docstring from here, and add to first part of body
 ?literal: ( _number | strings | DOCSTRING | BOOL | ELLIPSIS)
