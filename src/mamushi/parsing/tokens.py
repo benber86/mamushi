@@ -44,6 +44,7 @@ SUB = "sub"
 MUL = "mul"
 MOD = "mod"
 DIV = "div"
+FLOORDIV = "floordiv"
 POW = "pow"
 SHL = "shl"
 SHR = "shr"
@@ -53,7 +54,7 @@ DOUBLESTAR = "_POW"
 SLASH = "SLASH"
 STAR = "WILDCARD"
 PERCENT = "PERCENT"
-OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
+OPERATIONS = {ADD, SUB, MUL, MOD, DIV, FLOORDIV}
 EQUAL = "EQUAL"
 ASSIGN = "assign"
 AUG_ASSIGN = "aug_assign"
@@ -62,6 +63,7 @@ ASSIGN_OPERATORS = [
     ADD,
     SUB,
     DIV,
+    FLOORDIV,
     MUL,
     MOD,
     POW,
