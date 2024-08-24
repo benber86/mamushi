@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Tuple
 
-from tests.const import DATA_DIR, PROJECT_ROOT, VYPER_SUFFIX
+from tests.const import DATA_DIR, PROJECT_ROOT, VYPER_SUFFIXES
 
 
 def get_base_dir(data: bool) -> Path:
@@ -20,10 +20,13 @@ def all_data_cases(subdir_name: str, data: bool = True) -> List[str]:
 
 def get_case_path(subdir_name: str, name: str, data: bool = True) -> Path:
     """Get case path from name"""
-    case_path = get_base_dir(data) / subdir_name / name
-    case_path = case_path.with_suffix(VYPER_SUFFIX)
-    assert case_path.is_file(), f"{case_path} is not a file."
-    return case_path
+    base_path = get_base_dir(data) / subdir_name / name
+
+    for suffix in VYPER_SUFFIXES:
+        case_path = base_path.with_suffix(suffix)
+        if case_path.is_file():
+            return case_path
+    raise FileNotFoundError(f"No .vy or .vyi file found for {base_path}")
 
 
 def read_data(

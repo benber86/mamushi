@@ -44,6 +44,7 @@ SUB = "sub"
 MUL = "mul"
 MOD = "mod"
 DIV = "div"
+FLOORDIV = "floordiv"
 POW = "pow"
 SHL = "shl"
 SHR = "shr"
@@ -53,7 +54,7 @@ DOUBLESTAR = "_POW"
 SLASH = "SLASH"
 STAR = "WILDCARD"
 PERCENT = "PERCENT"
-OPERATIONS = {ADD, SUB, MUL, MOD, DIV}
+OPERATIONS = {ADD, SUB, MUL, MOD, DIV, FLOORDIV}
 EQUAL = "EQUAL"
 ASSIGN = "assign"
 AUG_ASSIGN = "aug_assign"
@@ -62,6 +63,7 @@ ASSIGN_OPERATORS = [
     ADD,
     SUB,
     DIV,
+    FLOORDIV,
     MUL,
     MOD,
     POW,
@@ -132,13 +134,16 @@ ARRAY_DEF = "array_def"
 DINARRAY_DEF = "dyn_array_def"
 CALL = "call"
 EMPTY = "empty"
-GET_ATTR = "get_attr"
+ABI_DECODE = "abi_decode"
+ATTRIBUTE = "attribute"
 GET_VAR = "get_var"
 LOG_STMT = "log_stmt"
-GET_ITEM = "get_item"
+SUBSCRIPT = "subscript"
 GETTER_SUFIX = "_with_getter"
 CONSTANT = "constant"
 IMMUTABLE = "immutable"
+IMPLEMENTS = "implements"
+USES = "uses"
 INDEXED_ARGS = "indexed_event_arg"
 ATOM = "atom"
 
@@ -168,10 +173,14 @@ RETURN_STMT = "return_stmt"
 PASS_STMT = "pass_stmt"
 BREAK_STMT = "break_stmt"
 CONTINUE_STMT = "continue_stmt"
+INITIALIZES_STMT = "initializes_stmt"
 RAISE = "raise"
 RAISE_WITH_REASON = "raise_with_reason"
 IMMUTABLE_DEF = "immutable_def"
 INTERFACE_DEF = "interface_def"
+IMPLEMENTS_DEF = "implements_def"
+USES_DEF = "uses_def"
+EXPORTS_DEF = "exports_def"
 STRUCT_DEF = "struct_def"
 ENUM_DEF = "enum_def"
 EVENT_DEF = "event_def"
@@ -189,6 +198,10 @@ SIMPLE_STATEMENTS = {
     RAISE,
     RAISE_WITH_REASON,
     LOG_STMT,
+    INITIALIZES_STMT,
+    IMPLEMENTS_DEF,
+    USES_DEF,
+    EXPORTS_DEF,
     CONSTANT_DEF,
     IMMUTABLE_DEF,
     INTERFACE_DEF,

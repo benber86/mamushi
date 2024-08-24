@@ -1,7 +1,7 @@
-from typing import Iterator, Optional
+from typing import Iterator
 from pathlib import Path
 
-VYPER_EXTENSIONS = {".vy"}
+VYPER_EXTENSIONS = {".vy", ".vyi"}
 BLACKLISTED_DIRECTORIES = {
     "build",
     "buck-out",
