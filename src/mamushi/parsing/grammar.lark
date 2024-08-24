@@ -14,7 +14,10 @@ module: ( DOCSTRING
         | flag_def
         | event_def
         | transient_def
-        | exports_decl
+        | implements_def
+        | uses_def
+        | exports_def
+        | initializes_stmt
         | function_def
         | immutable_def
         | _NEWLINE )*
@@ -116,10 +119,16 @@ _INTERFACE_DECL: "interface"
 mutability: NAME
 interface_function: function_sig ":" mutability
 interface_def: _INTERFACE_DECL NAME ":" _NEWLINE _INDENT ( interface_function _NEWLINE)+ _DEDENT
-_IMPLEMENTS_DECL: "implements"
-implements_def: _IMPLEMENTS_DECL ":" NAME
 
-exports_decl: "exports" ":" (attribute | tuple)
+implements_def: "implements" ":" NAME
+uses_def: "uses" ":" NAME
+exports_def: "exports" ":" (attribute | tuple)
+
+_INITIALIZES_DECL: "initializes"
+initializes_stmt: _INITIALIZES_DECL ":" initializes_list
+initializes_list: NAME ("," NAME)* [initializes_dependency]
+initializes_dependency: "[" NAME ":=" NAME ("," NAME ":=" NAME)* "]"
+
 
 // Statements
 // If and For blocks create a new block, and thus are complete when de-indented
@@ -335,7 +344,6 @@ _number: DEC_NUMBER
 BOOL.2: "True" | "False"
 
 ELLIPSIS: "..."
-_WS: /[ \t\f\r\n]*/
 
 // TODO: Remove Docstring from here, and add to first part of body
 ?literal: ( _number | strings | DOCSTRING | BOOL | ELLIPSIS)

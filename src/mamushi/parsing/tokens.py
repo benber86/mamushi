@@ -142,6 +142,8 @@ SUBSCRIPT = "subscript"
 GETTER_SUFIX = "_with_getter"
 CONSTANT = "constant"
 IMMUTABLE = "immutable"
+IMPLEMENTS = "implements"
+USES = "uses"
 INDEXED_ARGS = "indexed_event_arg"
 ATOM = "atom"
 
@@ -171,10 +173,14 @@ RETURN_STMT = "return_stmt"
 PASS_STMT = "pass_stmt"
 BREAK_STMT = "break_stmt"
 CONTINUE_STMT = "continue_stmt"
+INITIALIZES_STMT = "initializes_stmt"
 RAISE = "raise"
 RAISE_WITH_REASON = "raise_with_reason"
 IMMUTABLE_DEF = "immutable_def"
 INTERFACE_DEF = "interface_def"
+IMPLEMENTS_DEF = "implements_def"
+USES_DEF = "uses_def"
+EXPORTS_DEF = "exports_def"
 STRUCT_DEF = "struct_def"
 ENUM_DEF = "enum_def"
 EVENT_DEF = "event_def"
@@ -192,6 +198,10 @@ SIMPLE_STATEMENTS = {
     RAISE,
     RAISE_WITH_REASON,
     LOG_STMT,
+    INITIALIZES_STMT,
+    IMPLEMENTS_DEF,
+    USES_DEF,
+    EXPORTS_DEF,
     CONSTANT_DEF,
     IMMUTABLE_DEF,
     INTERFACE_DEF,

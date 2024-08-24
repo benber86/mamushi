@@ -61,6 +61,13 @@ def whitespace(leaf: Leaf) -> str:
         ):
             return NO
 
+        elif (
+            prevp.parent
+            and prevp.parent.parent
+            and prevp.parent.parent.type == tokens.INITIALIZES_STMT
+        ):
+            return NO
+
     elif p.type == tokens.KWARG:
         if prev.type != tokens.COMMA:
             return NO
@@ -98,6 +105,8 @@ def whitespace(leaf: Leaf) -> str:
             tokens.INDEXED_ARGS,
             tokens.LOG_STMT,
             tokens.CONSTANT,
+            tokens.IMPLEMENTS,
+            tokens.USES,
             tokens.IMMUTABLE,
         }
     ):
