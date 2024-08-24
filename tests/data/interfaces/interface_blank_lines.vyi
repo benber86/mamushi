@@ -1,0 +1,14 @@
+@view
+@external
+def foo():
+
+
+
+
+
+    ...
+# output
+@view
+@external
+def foo():
+    ...

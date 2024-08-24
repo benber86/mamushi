@@ -8,7 +8,7 @@ ensure_newline_before_comments = true
 
 [tool.black]
 line-length = 79
-target-version = ['py39', 'py310', 'py311', 'py312']
+target-version = ['py39', 'py310', 'py311']
 include = '\.pyi?$'
 exclude = '''
 (
@@ -38,7 +38,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.poetry]
 name = "mamushi"
-version = "0.0.2-b0"
+version = "0.0.3"
 description = "Vyper Formatter"
 authors = ["benny <benoitb@tutanota.de>"]
 
