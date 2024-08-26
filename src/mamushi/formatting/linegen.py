@@ -8,6 +8,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 from lark import Tree, Token
 from dataclasses import dataclass, field
@@ -19,13 +20,13 @@ from mamushi.formatting.comments import (
 from mamushi.formatting.nodes import (
     wrap_in_parentheses,
     is_atom_with_invisible_parens,
+    ensure_visible,
 )
 from mamushi.formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
     fix_docstring,
     is_pragma,
-    remove_double_spaces,
 )
 from mamushi.parsing.pytree import Leaf, Node
 from mamushi.formatting.lines import Line
@@ -105,6 +106,9 @@ class LineGenerator(Visitor[Line]):
             ):
                 yield from self.line()
         yield from super().visit_default(node)
+
+    def visit_external_call(self, node: Node) -> Iterator[Line]:
+        yield from self.visit_call(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
         # ensure single/double quote consistency
