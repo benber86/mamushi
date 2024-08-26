@@ -16,8 +16,9 @@ NodeType = str
 Priority = int
 
 
-COMPREHENSION_PRIORITY: Final = 18
-COMMA_PRIORITY: Final = 16
+COMPREHENSION_PRIORITY: Final = 20
+COMMA_PRIORITY: Final = 18
+TERNARY_PRIORITY: Final = 16
 LOGIC_PRIORITY: Final = 14
 STRING_PRIORITY: Final = 12
 COMPARATOR_PRIORITY: Final = 10
@@ -224,6 +225,13 @@ def is_split_before_delimiter(
         and leaf.parent.type in {tokens.IF_STMT, tokens.COND_EXEC}
     ):
         return COMPREHENSION_PRIORITY
+
+    if (
+        leaf.value in {"if", "else"}
+        and leaf.parent
+        and leaf.parent.type == tokens.TERNARY
+    ):
+        return TERNARY_PRIORITY
 
     if leaf.value in tokens.LOGIC_OPERATORS and leaf.parent:
         return LOGIC_PRIORITY

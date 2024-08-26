@@ -99,6 +99,7 @@ def whitespace(leaf: Leaf) -> str:
         in {
             tokens.FUNCTION_SIG,
             tokens.CALL,
+            tokens.EXTERNAL_CALL,
             tokens.EMPTY,
             tokens.ABI_DECODE,
             tokens.SUBSCRIPT,

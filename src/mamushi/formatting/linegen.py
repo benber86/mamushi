@@ -8,6 +8,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 from lark import Tree, Token
 from dataclasses import dataclass, field
@@ -19,13 +20,13 @@ from mamushi.formatting.comments import (
 from mamushi.formatting.nodes import (
     wrap_in_parentheses,
     is_atom_with_invisible_parens,
+    ensure_visible,
 )
 from mamushi.formatting.strings import (
     normalize_string_quotes,
     is_multiline_string,
     fix_docstring,
     is_pragma,
-    remove_double_spaces,
 )
 from mamushi.parsing.pytree import Leaf, Node
 from mamushi.formatting.lines import Line
@@ -105,6 +106,9 @@ class LineGenerator(Visitor[Line]):
             ):
                 yield from self.line()
         yield from super().visit_default(node)
+
+    def visit_external_call(self, node: Node) -> Iterator[Line]:
+        yield from self.visit_call(node)
 
     def visit_DOCSTRING(self, node: Leaf) -> Iterator[Line]:
         # ensure single/double quote consistency
@@ -446,6 +450,39 @@ def normalize_invisible_parens(
                 wrap_in_parentheses(node, child, visible=False)
 
         check_lpar = isinstance(child, Leaf) and (child.value in parens_after)
+
+
+def remove_extcall_parens(node: Node) -> None:
+    if (
+        node.children[0].type == tokens.EXTERNAL_CALL
+        and len(node.children) > 1
+    ):
+        if (
+            node.children[1].type == tokens.ATOM
+            and node.children[1].children[0].type == tokens.LPAR
+        ):
+            if maybe_make_parens_invisible_in_atom(
+                node.children[1],
+                parent=node,
+                remove_brackets_around_comma=True,
+            ):
+                wrap_in_parentheses(node, node.children[1], visible=False)
+
+            # Since await is an expression we shouldn't remove
+            # brackets in cases where this would change
+            # the AST due to operator precedence.
+            # Therefore we only aim to remove brackets around
+            # power nodes that aren't also await expressions themselves.
+            # https://peps.python.org/pep-0492/#updated-operator-precedence-table
+            # N.B. We've still removed any redundant nested brackets though :)
+            opening_bracket = cast(Leaf, node.children[1].children[0])
+            closing_bracket = cast(Leaf, node.children[1].children[-1])
+            bracket_contents = node.children[1].children[1]
+            if isinstance(bracket_contents, Node) and (
+                bracket_contents.children[0].type == tokens.EXTERNAL_CALL
+            ):
+                ensure_visible(opening_bracket)
+                ensure_visible(closing_bracket)
 
 
 def maybe_make_parens_invisible_in_atom(
