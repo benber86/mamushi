@@ -87,7 +87,7 @@ def whitespace(leaf: Leaf) -> str:
         ):
             return NO
 
-    elif p.type == tokens.ATTRIBUTE:
+    elif p.type in {tokens.ATTRIBUTE, tokens.IMPORTED_TYPE}:
         # variable access
         if t == tokens.DOT or prev.type == tokens.DOT:
             return NO
