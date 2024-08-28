@@ -38,7 +38,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.poetry]
 name = "mamushi"
-version = "0.0.4-a0"
+version = "0.0.4-a1"
 description = "Vyper Formatter"
 authors = ["benny <benoitb@tutanota.de>"]
 
