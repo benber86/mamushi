@@ -16,7 +16,7 @@ module: ( DOCSTRING
         | transient_def
         | implements_def
         | uses_def
-        | exports_def
+        | export
         | initializes_stmt
         | function_def
         | immutable_def
@@ -122,7 +122,7 @@ interface_def: _INTERFACE_DECL NAME ":" _NEWLINE _INDENT ( interface_function _N
 
 implements_def: "implements" ":" NAME
 uses_def: "uses" ":" NAME
-exports_def: "exports" ":" (attribute | tuple)
+export: "exports" ":" (attribute | "(" attribute ")"| tuple)
 
 _INITIALIZES_DECL: "initializes"
 initializes_stmt: _INITIALIZES_DECL ":" initializes_list

@@ -182,7 +182,7 @@ IMMUTABLE_DEF = "immutable_def"
 INTERFACE_DEF = "interface_def"
 IMPLEMENTS_DEF = "implements_def"
 USES_DEF = "uses_def"
-EXPORTS_DEF = "exports_def"
+EXPORT = "export"
 STRUCT_DEF = "struct_def"
 ENUM_DEF = "enum_def"
 EVENT_DEF = "event_def"
@@ -205,7 +205,7 @@ SIMPLE_STATEMENTS = {
     INITIALIZES_STMT,
     IMPLEMENTS_DEF,
     USES_DEF,
-    EXPORTS_DEF,
+    EXPORT,
     CONSTANT_DEF,
     IMMUTABLE_DEF,
     INTERFACE_DEF,
