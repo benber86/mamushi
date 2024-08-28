@@ -126,7 +126,6 @@ BODY = "body"
 EVENT_BODY = "event_body"
 ENUM_BODY = "enum_body"
 MODULE = "module"
-BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE}
 DEF_SUFFIX = "_def"
 RETURN_TYPE = "_RETURN_TYPE"
 FUNCTION_SIG = "function_sig"
@@ -191,6 +190,8 @@ INDEXED_EVENT_ARG = "indexed_event_arg"
 EVENT_MEMBER = "event_member"
 ENUM_MEMBER = "enum_member"
 STRUCT_MEMBER = "struct_member"
+
+BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE, STRUCT_DEF}
 
 SIMPLE_STATEMENTS = {
     VARIABLE_DEF,
