@@ -56,6 +56,14 @@ def ensure_visible(leaf: Leaf) -> None:
         leaf.value = ")"
 
 
+def is_lpar_token(nl: LN) -> bool:
+    return nl.type == tokens.LPAR
+
+
+def is_rpar_token(nl: LN) -> bool:
+    return nl.type == tokens.RPAR
+
+
 def is_one_sequence_between(
     opening: Leaf,
     closing: Leaf,

@@ -21,6 +21,8 @@ from mamushi.formatting.nodes import (
     wrap_in_parentheses,
     is_atom_with_invisible_parens,
     ensure_visible,
+    is_lpar_token,
+    is_rpar_token,
 )
 from mamushi.formatting.strings import (
     normalize_string_quotes,
@@ -238,6 +240,7 @@ class LineGenerator(Visitor[Line]):
 
     def visit_import(self, node: Node) -> Iterator[Line]:
         """Handles different import syntax"""
+        normalize_invisible_parens(node, parens_after={"import"})
         for child in node.children:
             if child.type in IMPORTS_TYPE and child.prev_sibling is None:
                 yield from self.line()
@@ -262,6 +265,8 @@ class LineGenerator(Visitor[Line]):
             normalize_invisible_parens(node, parens_after={"assert", ","})
         elif node.type == tokens.RETURN_STMT:
             normalize_invisible_parens(node, parens_after={"return"})
+        elif node.type == tokens.EXPORT:
+            normalize_invisible_parens(node, parens_after={"export", ":"})
 
         is_body_like = node.parent and (
             # TODO: handle this more cleanly
@@ -446,10 +451,32 @@ def normalize_invisible_parens(
                 ):
                     wrap_in_parentheses(child, first_child, visible=False)
 
+            elif node.type in {tokens.IMPORT, tokens.EXPORT}:
+                _normalize_import_from(node, child, index)
+                break
+
             elif not (isinstance(child, Leaf)):
                 wrap_in_parentheses(node, child, visible=False)
 
         check_lpar = isinstance(child, Leaf) and (child.value in parens_after)
+
+
+def _normalize_import_from(parent: Node, child: LN, index: int) -> None:
+    # "import from" nodes store parentheses directly as part of
+    # the statement
+    if (
+        is_lpar_token(child)
+        and isinstance(child, Leaf)
+        and isinstance(parent.children[-1], Leaf)
+        and is_rpar_token(parent.children[-1])
+    ):
+        # make parentheses invisible
+        child.value = ""
+        parent.children[-1].value = ""
+    elif child.type != tokens.STAR:
+        # insert invisible parentheses
+        parent.insert_child(index, Leaf(tokens.LPAR, ""))
+        parent.append_child(Leaf(tokens.RPAR, ""))
 
 
 def maybe_make_parens_invisible_in_atom(
