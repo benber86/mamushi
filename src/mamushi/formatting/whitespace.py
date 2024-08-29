@@ -113,7 +113,7 @@ def whitespace(leaf: Leaf) -> str:
     ):
         # no parentheses on calls, function sigs, logs and defs
         # except for returns
-        if t == tokens.LPAR and prev.type not in tokens.RETURN_TYPE:
+        if t == tokens.LPAR and prev.type not in {tokens.RETURN_TYPE}:
             return NO
 
         if t == tokens.LSQB:
