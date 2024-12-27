@@ -12,6 +12,8 @@ from pathlib import Path
 import click
 from mamushi.utils.output import out, diff, color_diff
 from mamushi.utils.report import Report, Changed
+import multiprocessing
+from functools import partial
 
 
 def format_stdin_to_stdout(src: str, dst: str):
@@ -40,6 +42,25 @@ def format_stdin_to_stdout(src: str, dst: str):
     d = color_diff(d)
     f.write(d)
     f.detach()
+
+
+def process_file(args):
+    src, line_length, safe, diff, in_place, check = args
+    parser = Parser()  # Create a new parser for each process
+    report = Report(
+        check=check, diff=diff, quiet=True, verbose=False
+    )  # Create a new report for each process
+
+    return reformat(
+        src=src,
+        parser=parser,
+        safe=safe,
+        diff=diff,
+        in_place=in_place and not (check or diff),
+        check=check,
+        line_length=line_length,
+        report=report,
+    )
 
 
 def reformat(
@@ -159,7 +180,7 @@ def main(
     src: List[str],
 ) -> None:
     sources: List[Path] = []
-    report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
+    # report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
     if not src:
         src = [str(Path.cwd().resolve())]
 
@@ -172,25 +193,27 @@ def main(
             sources.append(p)
         else:
             raise FileNotFoundError(f"invalid path: {s}")
-    parser = Parser()
-    for source in sources:
-        reformat(
-            src=source,
-            parser=parser,
-            safe=safe,
-            diff=diff,
-            in_place=in_place and not (check or diff),
-            check=check,
-            line_length=line_length,
-            report=report,
-        )
+
+    args_list = [
+        (source, line_length, safe, diff, in_place, check)
+        for source in sources
+    ]
+
+    # Use multiprocessing to process files
+    with multiprocessing.Pool() as pool:
+        results = pool.map(process_file, args_list)
+    error_count = sum(1 for result in results if result)
 
     error_msg = "Oh no! 💥 💔 💥"
+
     if verbose or not quiet:
-        out(error_msg if report.return_code else "All done! ✨ 🍰 ✨")
+        out(error_msg if error_count else "All done! ✨ 🍰 ✨")
         if in_place:
-            click.echo(str(report), err=True)
-    ctx.exit(report.return_code)
+            click.echo(
+                f"Processed {len(sources)} files. {error_count} errors.",
+                err=True,
+            )
+    ctx.exit(1 if error_count else 0)
 
 
 if __name__ == "__main__":
