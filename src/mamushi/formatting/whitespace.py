@@ -24,7 +24,6 @@ def whitespace(leaf: Leaf) -> str:
     DOUBLESPACE: Final = "  "
     t = leaf.type
     p = leaf.parent
-    v = leaf.value
 
     if t in ALWAYS_NO_SPACE:
         return NO
@@ -123,7 +122,7 @@ def whitespace(leaf: Leaf) -> str:
         # decorators
         return NO
 
-    elif v.isnumeric() and p.type in tokens.UNARY:
+    elif t in tokens.NUMBERS and p.type in tokens.UNARY:
         # no space for signed numbers
         return NO
 
