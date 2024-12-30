@@ -68,6 +68,10 @@ self.b(
 )
 ```
 
+#### Disabling formatting
+
+The `# fmt: on`, `# fmt: off`, `# fmt: skip` tags from black are currently not supported. You can use `# nosplit` to prevent the formatter from a splitting a line but formatting will still be applied to spacing.
+
 but if the trailing comma is removed, the line will be collapsed to:
 
 ```
