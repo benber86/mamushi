@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from mamushi.__version__ import __version__
 from datetime import datetime
 import io
@@ -13,7 +15,15 @@ import click
 from mamushi.utils.output import out, diff, color_diff
 from mamushi.utils.report import Report, Changed
 import multiprocessing
-from functools import partial
+
+
+@dataclass
+class ProcessResult:
+    src: Path
+    success: bool
+    changed: Changed | None = None
+    error_message: str | None = None
+    traceback_str: str | None = None
 
 
 def format_stdin_to_stdout(src: str, dst: str):
@@ -47,10 +57,6 @@ def format_stdin_to_stdout(src: str, dst: str):
 def process_file(args):
     src, line_length, safe, diff, in_place, check = args
     parser = Parser()  # Create a new parser for each process
-    report = Report(
-        check=check, diff=diff, quiet=True, verbose=False
-    )  # Create a new report for each process
-
     return reformat(
         src=src,
         parser=parser,
@@ -59,7 +65,6 @@ def process_file(args):
         in_place=in_place and not (check or diff),
         check=check,
         line_length=line_length,
-        report=report,
     )
 
 
@@ -71,39 +76,43 @@ def reformat(
     in_place: bool,
     check: bool,
     line_length: int,
-    report: "Report",
 ):
     with open(src, "r") as fp:
         contract = fp.read()
     try:
         src_content = parser.parse(contract)
     except Exception:
-        if report.verbose:
-            traceback.print_exc()
-        report.failed(
-            src,
-            "Unable to parse input file, are you sure the Vyper code is valid?",
+        return ProcessResult(
+            src=src,
+            success=False,
+            error_message="Unable to parse input file, are you sure the Vyper code is valid?",
+            traceback_str=traceback.format_exc(),
         )
-        return True
-    res = format_tree(src_content, line_length)
 
+    res = format_tree(src_content, line_length)
     changed = Changed.NO if res == contract else Changed.YES
 
     if safe and not compare_ast(contract, res):
-        report.failed(src, "Formatting changed the AST, aborting")
-        return False
-    report.done(src, changed)
+        return ProcessResult(
+            src=src,
+            success=False,
+            error_message="Formatting changed the AST, aborting",
+        )
+
     if check:
-        return False
+        return ProcessResult(src=src, success=True, changed=changed)
+
     if diff:
         format_stdin_to_stdout(contract, res)
-        return True
+        return ProcessResult(src=src, success=True, changed=changed)
 
     if in_place:
         with open(src, "w") as fp:
             fp.write(res)
     else:
         print(res)
+
+    return ProcessResult(src=src, success=True, changed=changed)
 
 
 @click.command()
@@ -180,7 +189,6 @@ def main(
     src: List[str],
 ) -> None:
     sources: List[Path] = []
-    # report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
     if not src:
         src = [str(Path.cwd().resolve())]
 
@@ -202,18 +210,22 @@ def main(
     # Use multiprocessing to process files
     with multiprocessing.Pool() as pool:
         results = pool.map(process_file, args_list)
-    error_count = sum(1 for result in results if result)
+    report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
+
+    for result in results:
+        if not result.success:
+            if verbose and result.traceback_str:
+                print(result.traceback_str, file=sys.stderr)
+            report.failed(result.src, result.error_message)
+        else:
+            report.done(result.src, result.changed)
 
     error_msg = "Oh no! 💥 💔 💥"
-
     if verbose or not quiet:
-        out(error_msg if error_count else "All done! ✨ 🍰 ✨")
+        out(error_msg if report.return_code else "All done! ✨ 🍰 ✨")
         if in_place:
-            click.echo(
-                f"Processed {len(sources)} files. {error_count} errors.",
-                err=True,
-            )
-    ctx.exit(1 if error_count else 0)
+            click.echo(str(report), err=True)
+    ctx.exit(report.return_code)
 
 
 if __name__ == "__main__":
