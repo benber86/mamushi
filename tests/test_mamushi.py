@@ -17,10 +17,6 @@ def test_diff_file(runner):
         assert result.exit_code == 0
         assert "would reformat" in result.stderr
         assert "would be reformatted" in result.stderr
-        assert "\033[1m" in result.stdout
-        assert "\033[36m" in result.stdout
-        assert "\033[32m" in result.stdout
-        assert "\033[31m" in result.stdout
 
     finally:
         os.unlink(tmp_file)

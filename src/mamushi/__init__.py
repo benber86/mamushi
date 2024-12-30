@@ -24,9 +24,10 @@ class ProcessResult:
     changed: Changed | None = None
     error_message: str | None = None
     traceback_str: str | None = None
+    formatted_content: str | None = None
 
 
-def format_stdin_to_stdout(src: str, dst: str):
+def format_stdin_to_stdout(src: str, dst: str, file_path: Path | None):
     """Format file on stdin. Return True if changed.
 
     If content is None, it's read from sys.stdin.
@@ -46,8 +47,8 @@ def format_stdin_to_stdout(src: str, dst: str):
         write_through=True,
     )
     now = datetime.utcnow()
-    src_name = f"STDIN\t{then} +0000"
-    dst_name = f"STDOUT\t{now} +0000"
+    src_name = f"STDIN\t{then} +0000 - {file_path}"
+    dst_name = f"STDOUT\t{now} +0000 - {file_path}"
     d = diff(src, dst, src_name, dst_name)
     d = color_diff(d)
     f.write(d)
@@ -103,16 +104,16 @@ def reformat(
         return ProcessResult(src=src, success=True, changed=changed)
 
     if diff:
-        format_stdin_to_stdout(contract, res)
+        format_stdin_to_stdout(contract, res, src)
         return ProcessResult(src=src, success=True, changed=changed)
 
     if in_place:
         with open(src, "w") as fp:
             fp.write(res)
-    else:
-        print(res)
 
-    return ProcessResult(src=src, success=True, changed=changed)
+    return ProcessResult(
+        src=src, success=True, changed=changed, formatted_content=res
+    )
 
 
 @click.command()
@@ -215,10 +216,12 @@ def main(
     for result in results:
         if not result.success:
             if verbose and result.traceback_str:
-                print(result.traceback_str, file=sys.stderr)
+                out(result.traceback_str)
             report.failed(result.src, result.error_message)
         else:
             report.done(result.src, result.changed)
+            if not in_place and result.formatted_content:
+                click.echo(result.formatted_content)
 
     error_msg = "Oh no! 💥 💔 💥"
     if verbose or not quiet:
