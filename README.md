@@ -32,6 +32,17 @@ Output the result to console instead of overwriting:
 
 `mamushi --in-place False`
 
+### pre-compile
+Add to your `.pre-compile-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/vyperlang/mamushi
+    rev: main
+    hooks:
+      - id: mamushi
+        args: [ --line-length 100 ]
+```
+
 
 ## Notes
 
