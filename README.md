@@ -32,7 +32,7 @@ Output the result to console instead of overwriting:
 
 `mamushi --in-place False`
 
-### pre-compile
+### pre-commit
 Add to your `.pre-compile-config.yaml`:
 ```yaml
 repos:
