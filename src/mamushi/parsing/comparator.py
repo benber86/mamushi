@@ -10,13 +10,13 @@ _plain_lark_grammar = None
 
 class NullifyStringsAndNewLines(Transformer_InPlaceRecursive):
     def DOCSTRING(self, args):
-        return Token(type_=tokens.DOCSTRING, value="")
+        return Token(type=tokens.DOCSTRING, value="")
 
     def _NEWLINE(self, args):
-        return Token(type_=tokens.NEWLINE, value="")
+        return Token(type=tokens.NEWLINE, value="")
 
     def STRING(self, args):
-        return Token(type_=tokens.STRING, value="")
+        return Token(type=tokens.STRING, value="")
 
 
 def plain_grammar():

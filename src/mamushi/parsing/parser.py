@@ -28,9 +28,7 @@ class Parser(object):
         self._comments = []
         self._all_newlines = []
         self._comment_mapping: CommentMapping = {}
-        self._orphan_comment_mapping: StandAloneCommentMapping = defaultdict(
-            list
-        )
+        self._orphan_comment_mapping: StandAloneCommentMapping = defaultdict(list)
         self._header_comments: List[Token] = []
         self.indenter = PythonIndenter()
         self.lalr = self._create_lalr_parser()
@@ -58,7 +56,7 @@ class Parser(object):
 
     @staticmethod
     def _preprocess(code: str) -> str:
-        return re.sub(r"[ \t]+\n", "\n", code, re.MULTILINE) + "\n"
+        return re.sub(r"[ \t]+\n", "\n", code, flags=re.MULTILINE) + "\n"
 
     def _clear_comments(self):
         self._comments.clear()
@@ -134,9 +132,7 @@ class Parser(object):
         o_cmt_idx = {c.line: c for c in orphaned_comments}
 
         queue = [tree]
-        terminal_leaves: Dict[
-            int, Token
-        ] = {}  # parent node and index of child
+        terminal_leaves: Dict[int, Token] = {}  # parent node and index of child
 
         # we first traverse to find the last token on each potentially relevant line
         while queue:
@@ -233,15 +229,11 @@ class Parser(object):
                     # process any potential trailing comments
                     child_id = (
                         self._token_id(child)
-                        if child.type
-                        not in {tokens.COMMENT, tokens.STANDALONE_COMMENT}
+                        if child.type not in {tokens.COMMENT, tokens.STANDALONE_COMMENT}
                         else ("", "", 0, 0)
                     )
 
-                    if (
-                        self._comment_mapping
-                        and child_id in self._comment_mapping
-                    ):
+                    if self._comment_mapping and child_id in self._comment_mapping:
                         comment = self._comment_mapping[child_id]
                         # if the current node is a newline, we want the trailing comment BEFORE
                         if child.type == NEWLINE:

@@ -13,7 +13,7 @@ pytest = ">=7.0.0"
 pytest-cov = ">=3.0.0"
 coverage = ">=6.5.0"
 bump2version = ">=1.0.0"
-mypy-extensions = "==0.4.3"
+mypy-extensions = ">=1.1.0"
 
 [dev-packages]
 
