@@ -86,4 +86,3 @@ self.b(0, msg.sender, True)  # amount to send  # sender  # refund ?
 - [ ] Handle versioning of Vyper/lark grammar
 - [ ] Refactoring comment handling in the parser
 - [ ] Add .gitignore / exclude / include support
-
