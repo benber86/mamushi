@@ -45,7 +45,6 @@ RawNode = Tuple[int, Optional[Text], Optional[Context], Optional[List[NL]]]
 
 
 class Base(object):
-
     """
     Abstract base class for Node and Leaf.
 
@@ -224,7 +223,6 @@ class Base(object):
 
 
 class Node(Base):
-
     """Concrete implementation for interior nodes."""
 
     fixers_applied: Optional[List[Any]]
@@ -364,7 +362,6 @@ class Node(Base):
 
 
 class Leaf(Base):
-
     """Concrete implementation for leaf nodes."""
 
     # Default values for instance variables

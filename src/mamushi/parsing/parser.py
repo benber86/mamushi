@@ -134,9 +134,9 @@ class Parser(object):
         o_cmt_idx = {c.line: c for c in orphaned_comments}
 
         queue = [tree]
-        terminal_leaves: Dict[
-            int, Token
-        ] = {}  # parent node and index of child
+        terminal_leaves: Dict[int, Token] = (
+            {}
+        )  # parent node and index of child
 
         # we first traverse to find the last token on each potentially relevant line
         while queue:
