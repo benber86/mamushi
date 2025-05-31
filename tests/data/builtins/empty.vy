@@ -14,4 +14,3 @@ def foo():
     b: uint256[2][5] = empty(uint256[2][5])
     c: uint256[2][5] = empty(uint256[2][5])
     d: uint256[2][5] = empty(uint256[2][5])
-

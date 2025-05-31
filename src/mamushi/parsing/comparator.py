@@ -10,19 +10,19 @@ _plain_lark_grammar = None
 
 class NullifyStringsAndNewLines(Transformer_InPlaceRecursive):
     def DOCSTRING(self, args):
-        return Token(type_=tokens.DOCSTRING, value="")
+        return Token(type=tokens.DOCSTRING, value="")
 
     def _NEWLINE(self, args):
-        return Token(type_=tokens.NEWLINE, value="")
+        return Token(type=tokens.NEWLINE, value="")
 
     def STRING(self, args):
-        return Token(type_=tokens.STRING, value="")
+        return Token(type=tokens.STRING, value="")
 
 
 def plain_grammar():
     global _plain_lark_grammar
     if _plain_lark_grammar is None:
-        return Lark.open_from_package(
+        _plain_lark_grammar = Lark.open_from_package(
             "mamushi",
             "grammar.lark",
             ["parsing"],
@@ -32,6 +32,7 @@ def plain_grammar():
             keep_all_tokens=False,
             maybe_placeholders=False,
         )
+    return _plain_lark_grammar
 
 
 def parse_string_to_tokenless_ast(code: str) -> Tree:

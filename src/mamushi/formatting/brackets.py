@@ -101,9 +101,9 @@ class BracketTracker:
                 if delim:
                     self.delimiters[id(leaf)] = delim
         if leaf.type in tokens.OPENING_BRACKETS:
-            self.bracket_match[
-                self.depth, tokens.BRACKET_MAP[leaf.type]
-            ] = leaf
+            self.bracket_match[self.depth, tokens.BRACKET_MAP[leaf.type]] = (
+                leaf
+            )
             self.depth += 1
             if not leaf.value:
                 self.invisible.append(leaf)
