@@ -45,7 +45,7 @@ authors = ["benny <benoitb@tutanota.de>"]
 [tool.poetry.dependencies]
 python = "^3.9"
 click = "8.1.3"
-black = "24.10.0"
+black = "25.1.0"
 pre-commit = "2.20.0"
 types-attrs = "^19.1.0"
 lark = ">=1.0.0"
