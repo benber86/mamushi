@@ -36,7 +36,7 @@ Output the result to console instead of overwriting:
 Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
-  - repo: https://github.com/vyperlang/mamushi
+  - repo: https://github.com/benber86/mamushi
     rev: main
     hooks:
       - id: mamushi
