@@ -33,7 +33,7 @@ Output the result to console instead of overwriting:
 `mamushi --in-place False`
 
 ### pre-commit
-Add to your `.pre-compile-config.yaml`:
+Add to your `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/vyperlang/mamushi
