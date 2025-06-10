@@ -40,7 +40,7 @@ repos:
     rev: main
     hooks:
       - id: mamushi
-        args: [ --line-length 100 ]
+        args: [ --line-length=100 ]
 ```
 
 
