@@ -1,5 +1,5 @@
 - id: mamushi
-  name: Mamushi Vyper Formatter
+  name: format vyper
   description: "Run 'mamushi' for Vyper formatting"
   entry: mamushi
   language: system
