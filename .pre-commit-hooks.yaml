@@ -1,0 +1,8 @@
+- id: mamushi
+  name: format vyper
+  description: "Run 'mamushi' for Vyper formatting"
+  entry: mamushi
+  language: system
+  # types: [ vyper ]
+  files: "\\.(vy|vyi)$"  # remove when type `vyper` available
+  # additional_dependencies: ['identify==2.6.8']
