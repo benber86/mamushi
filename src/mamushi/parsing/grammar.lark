@@ -303,14 +303,8 @@ call: atom_expr "(" [arguments] ")"
 // special rule to handle types as "arguments" (for `empty` builtin)
 empty: "empty" "(" type ")"
 
-// special rule to handle types as "arguments" (for `_abi_decode` builtin)
-abi_decode: ("_abi_decode" | "abi_decode") "(" arg "," type ( "," kwarg )* ")"
-
-special_builtins: empty | abi_decode
-
 // NOTE: Must end recursive cycle like this (with `atom` calling `operation`)
 ?atom: literal
-     | special_builtins
      | tuple
      | list
      | dict
@@ -333,7 +327,7 @@ DEC_NUMBER: /0|[1-9](_?\d)*/
 HEX_NUMBER.2: /0x([_]?[0-9a-f])+/i
 OCT_NUMBER.2: /0o([_]?[0-7])+/i
 BIN_NUMBER.2 : /0b([_]?[01])+/i
-FLOAT_NUMBER.2: /([0-9]+(_?[0-9])*\.([0-9]+(_?[0-9])*)?|\.[0-9]+(_?[0-9])*)(e[-+]?[0-9]+(_?[0-9])*)?/i
+FLOAT_NUMBER.2: /([0-9]+(_?[0-9])*\.([0-9]+(_?[0-9])*)?|\.[0-9]+(_?[0-9])*)(e[-+]?[0-9]+(_?[0-9])*)?|[0-9]+(_?[0-9])*e[-+]?[0-9]+(_?[0-9])*/i
 
 _number: DEC_NUMBER
        | HEX_NUMBER
