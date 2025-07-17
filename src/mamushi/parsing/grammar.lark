@@ -151,7 +151,8 @@ _simple_stmt: (declaration
 declaration: variable ["=" expr]
 skip_assign: "_"
 multiple_assign: (atom_expr | skip_assign) ("," (atom_expr | skip_assign))+ [","]
-assign: (atom_expr | multiple_assign | "(" multiple_assign ")" ) "=" expr
+assign: (atom_expr | multiple_assign | "(" multiple_assign ")") "=" expr
+
 // NOTE: Keep these in sync with bin_op below
 ?aug_operator: "+"  -> add
              | "-"  -> sub
