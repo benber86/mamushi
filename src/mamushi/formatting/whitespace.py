@@ -106,7 +106,7 @@ def whitespace(leaf: Leaf) -> str:
             tokens.CONSTANT,
             tokens.IMPLEMENTS,
             tokens.USES,
-            tokens.IMMUTABLE,
+            tokens.VARIABLE_ANNOTATION,
         }
     ):
         # no parentheses on calls, function sigs, logs and defs
