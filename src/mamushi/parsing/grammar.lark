@@ -293,8 +293,14 @@ call: atom_expr "(" [arguments] ")"
 // special rule to handle types as "arguments" (for `empty` builtin)
 empty: "empty" "(" type ")"
 
+// special rule to handle types as "arguments" (for `_abi_decode` builtin)
+abi_decode: ("_abi_decode" | "abi_decode") "(" arg "," type ("," kwarg)* [","] ")"
+
+special_builtins: empty | abi_decode
+
 // NOTE: Must end recursive cycle like this (with `atom` calling `operation`)
 ?atom: literal
+     | special_builtins
      | tuple
      | list
      | dict
