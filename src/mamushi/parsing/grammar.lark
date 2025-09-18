@@ -46,7 +46,7 @@ constant_with_getter: NAME ":" "public" "(" constant ")"
 constant_def: (constant_private | constant_with_getter) "=" expr
 
 
-variable: NAME ":" type
+variable: (NAME | skip_assign) ":" type
 // NOTE: Temporary until decorators used
 variable_annotation: ("public" | "reentrant" | "immutable" | "transient") "(" (variable_annotation | type) ")"
 variable_def: NAME ":" (variable_annotation | type)
