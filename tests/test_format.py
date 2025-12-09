@@ -13,3 +13,11 @@ test_cases = [
 def test_format(case: str, category: str, parser):
     source, expected = read_data(category, case)
     assert format_tree(parser.parse(source)).strip() == expected.strip()
+
+
+@pytest.mark.parametrize("category,case", test_cases)
+def test_format_idempotent(case: str, category: str, parser):
+    source, _ = read_data(category, case)
+    first = format_tree(parser.parse(source)).strip()
+    second = format_tree(parser.parse(first)).strip()
+    assert first == second
