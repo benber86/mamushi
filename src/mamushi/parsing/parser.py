@@ -94,7 +94,7 @@ class Parser(object):
             )
             nlines = 0
         if res:
-            res[-1].value += "\n" * nlines
+            res[-1].value += "\n" * min(nlines, 2)
         return res
 
     @staticmethod

@@ -196,6 +196,23 @@ class LineGenerator(Visitor[Line]):
         node.value = re.sub(r"\n\n+", "\n\n", node.value)
         node.value = add_leading_space_after_hashtag(node.value)
         settle_prefix(node)
+
+        # Check if next leaf is _DEDENT and extract trailing newlines from it
+        nextl = next_leaf(node)
+        if nextl and nextl.type == tokens.DEDENT and "\n" in str(nextl.value):
+            dedent_newlines = len(nextl.value) - len(nextl.value.lstrip("\n"))
+            if dedent_newlines > 0:
+                # Transfer up to 2 trailing newlines from dedent to comment
+                node.value = node.value.rstrip("\n") + (
+                    "\n" * min(dedent_newlines, 2)
+                )
+                # Remove those newlines from dedent
+                nextl.value = nextl.value.lstrip("\n")
+
+        trailing_newlines = len(node.value) - len(node.value.rstrip("\n"))
+        node.value = node.value.rstrip("\n") + (
+            "\n" * min(trailing_newlines, 2)
+        )
         if not self.current_line.bracket_tracker.any_open_brackets():
             yield from self.line()
         yield from self.visit_default(node)
