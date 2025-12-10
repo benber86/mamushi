@@ -81,7 +81,28 @@ self.b(
 
 #### Disabling formatting
 
-The `# fmt: on`, `# fmt: off`, `# fmt: skip` tags from black are currently not supported. You can use `# nosplit` to prevent the formatter from a splitting a line but formatting will still be applied to spacing.
+Mamushi supports `# fmt: off` and `# fmt: on` tags to disable formatting for specific regions of code:
+
+```vyper
+x: uint256 = 1
+
+# fmt: off
+y:    uint256     =     2    # preserve this spacing
+z:uint256=3
+# fmt: on
+
+a: uint256 = 4  # this will be formatted normally
+```
+
+The code between `# fmt: off` and `# fmt: on` will be preserved exactly as written, including all spacing and line breaks. These tags can be nested, and unclosed `# fmt: off` regions will extend to the end of the file.
+
+You can also use `# nosplit` on individual lines to prevent line splitting while still applying spacing normalization:
+
+```vyper
+assert not self.user[receiver][msg.sender], "Error message"  # nosplit
+```
+
+Note: `# fmt: skip` is not currently supported.
 
 but if the trailing comma is removed, the line will be collapsed to:
 
