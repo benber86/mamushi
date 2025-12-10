@@ -90,7 +90,7 @@ def reformat(
             traceback_str=traceback.format_exc(),
         )
 
-    res = format_tree(src_content, line_length)
+    res = format_tree(src_content, line_length, parser=parser)
     changed = Changed.NO if res == contract else Changed.YES
 
     if safe and not compare_ast(contract, res):

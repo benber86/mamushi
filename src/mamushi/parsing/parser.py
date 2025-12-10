@@ -32,6 +32,8 @@ class Parser(object):
             list
         )
         self._header_comments: List[Token] = []
+        self._original_source: str = ""
+        self._fmt_off_regions: List[Tuple[int, int, List[str]]] = []
         self.indenter = PythonIndenter()
         self.lalr = self._create_lalr_parser()
 
@@ -66,9 +68,13 @@ class Parser(object):
         self._orphan_comment_mapping.clear()
         self._header_comments.clear()
         self._all_newlines.clear()
+        self._original_source = ""
+        self._fmt_off_regions.clear()
 
     def parse(self, code):
+        self._original_source = code
         self._clear_comments()
+        self._scan_fmt_regions(code)
         lark_tree = self.lalr.parse(self._preprocess(code))
         self._generate_comment_associations(lark_tree)
         pytree = self._to_pytree(lark_tree)
@@ -106,6 +112,27 @@ class Parser(object):
             token.end_pos,
             token.line,
         )
+
+    def _scan_fmt_regions(self, code: str) -> None:
+        """Scan for # fmt: off and # fmt: on pairs"""
+        lines = code.split("\n")
+        stack = []  # For handling nested regions
+
+        for line_num, line in enumerate(lines, start=1):
+            # Detect fmt: off (with or without space after colon)
+            if "# fmt: off" in line or "# fmt:off" in line:
+                stack.append(line_num)
+            # Detect fmt: on
+            elif ("# fmt: on" in line or "# fmt:on" in line) and stack:
+                start = stack.pop()
+                original_lines = lines[start - 1 : line_num]
+                self._fmt_off_regions.append((start, line_num, original_lines))
+
+        # Handle unclosed regions - treat as extending to EOF
+        while stack:
+            start = stack.pop()
+            original_lines = lines[start - 1 :]
+            self._fmt_off_regions.append((start, len(lines), original_lines))
 
     def _generate_comment_associations(self, tree: Tree):
         """
