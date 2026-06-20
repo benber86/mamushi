@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   publish-pypi:
+    if: ${{ !contains(github.event.release.body, '[skip pypi]') }}
     name: Publish to PyPI
     runs-on: ubuntu-latest
 
