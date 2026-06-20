@@ -113,15 +113,20 @@ def reformat(
         return ProcessResult(src=src, success=True, changed=changed)
 
     if diff:
-        format_stdin_to_stdout(contract, res, src)
+        if changed is Changed.YES:
+            format_stdin_to_stdout(contract, res, src)
         return ProcessResult(src=src, success=True, changed=changed)
 
     if in_place and changed is Changed.YES:
         with open(src, "w") as fp:
             fp.write(res)
 
+    formatted_content = None if in_place else res
     return ProcessResult(
-        src=src, success=True, changed=changed, formatted_content=res
+        src=src,
+        success=True,
+        changed=changed,
+        formatted_content=formatted_content,
     )
 
 

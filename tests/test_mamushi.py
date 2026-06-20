@@ -32,6 +32,7 @@ def test_diff_file_no_diffs(runner):
     try:
         result = runner.invoke(mamushi.main, ["--diff", str(tmp_file)])
         assert result.exit_code == 0
+        assert result.stdout == ""
         assert "left unchanged" in result.stderr
     finally:
         os.unlink(tmp_file)
@@ -104,6 +105,25 @@ def test_in_place_skips_write_when_unchanged(monkeypatch):
         )
         assert result.success
         assert result.changed is mamushi.Changed.NO
+    finally:
+        os.unlink(tmp_file)
+
+
+def test_in_place_result_omits_formatted_content():
+    tmp_file = Path(dump_to_file("a: constant( uint256 ) = 0"))
+    try:
+        result = mamushi.reformat(
+            tmp_file,
+            parser=mamushi.Parser(),
+            safe=True,
+            diff=False,
+            in_place=True,
+            check=False,
+            line_length=80,
+        )
+        assert result.success
+        assert result.changed is mamushi.Changed.YES
+        assert result.formatted_content is None
     finally:
         os.unlink(tmp_file)
 
