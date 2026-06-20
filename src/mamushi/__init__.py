@@ -17,6 +17,9 @@ from mamushi.utils.report import Report, Changed
 import multiprocessing
 
 
+_worker_parser: Parser | None = None
+
+
 @dataclass
 class ProcessResult:
     src: Path
@@ -25,6 +28,13 @@ class ProcessResult:
     error_message: str | None = None
     traceback_str: str | None = None
     formatted_content: str | None = None
+
+
+def get_worker_parser() -> Parser:
+    global _worker_parser
+    if _worker_parser is None:
+        _worker_parser = Parser()
+    return _worker_parser
 
 
 def format_stdin_to_stdout(src: str, dst: str, file_path: Path | None):
@@ -57,10 +67,9 @@ def format_stdin_to_stdout(src: str, dst: str, file_path: Path | None):
 
 def process_file(args):
     src, line_length, safe, diff, in_place, check = args
-    parser = Parser()  # Create a new parser for each process
     return reformat(
         src=src,
-        parser=parser,
+        parser=get_worker_parser(),
         safe=safe,
         diff=diff,
         in_place=in_place and not (check or diff),
@@ -208,9 +217,11 @@ def main(
         for source in sources
     ]
 
-    # Use multiprocessing to process files
-    with multiprocessing.Pool() as pool:
-        results = pool.map(process_file, args_list)
+    if len(args_list) <= 1:
+        results = [process_file(args) for args in args_list]
+    else:
+        with multiprocessing.Pool() as pool:
+            results = pool.map(process_file, args_list)
     report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
 
     for result in results:
