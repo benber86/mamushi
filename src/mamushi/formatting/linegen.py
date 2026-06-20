@@ -8,9 +8,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    cast,
 )
-from lark import Tree, Token
 from dataclasses import dataclass, field
 
 from mamushi.formatting.comments import (
@@ -20,7 +18,6 @@ from mamushi.formatting.comments import (
 from mamushi.formatting.nodes import (
     wrap_in_parentheses,
     is_atom_with_invisible_parens,
-    ensure_visible,
     is_lpar_token,
     is_rpar_token,
 )
@@ -37,7 +34,6 @@ from mamushi.parsing import tokens
 import re
 
 T = TypeVar("T")
-TT = Union[Tree, Token]
 LN = Union[Leaf, Node]
 
 IMPORTS_TYPE = {tokens.IMPORT_FROM, tokens.IMPORT_NAME}

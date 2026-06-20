@@ -17,6 +17,9 @@ from mamushi.utils.report import Report, Changed
 import multiprocessing
 
 
+_worker_parser: Parser | None = None
+
+
 @dataclass
 class ProcessResult:
     src: Path
@@ -25,6 +28,13 @@ class ProcessResult:
     error_message: str | None = None
     traceback_str: str | None = None
     formatted_content: str | None = None
+
+
+def get_worker_parser() -> Parser:
+    global _worker_parser
+    if _worker_parser is None:
+        _worker_parser = Parser()
+    return _worker_parser
 
 
 def format_stdin_to_stdout(src: str, dst: str, file_path: Path | None):
@@ -57,10 +67,9 @@ def format_stdin_to_stdout(src: str, dst: str, file_path: Path | None):
 
 def process_file(args):
     src, line_length, safe, diff, in_place, check = args
-    parser = Parser()  # Create a new parser for each process
     return reformat(
         src=src,
-        parser=parser,
+        parser=get_worker_parser(),
         safe=safe,
         diff=diff,
         in_place=in_place and not (check or diff),
@@ -93,7 +102,7 @@ def reformat(
     res = format_tree(src_content, line_length, parser=parser)
     changed = Changed.NO if res == contract else Changed.YES
 
-    if safe and not compare_ast(contract, res):
+    if safe and changed is Changed.YES and not compare_ast(contract, res):
         return ProcessResult(
             src=src,
             success=False,
@@ -104,15 +113,20 @@ def reformat(
         return ProcessResult(src=src, success=True, changed=changed)
 
     if diff:
-        format_stdin_to_stdout(contract, res, src)
+        if changed is Changed.YES:
+            format_stdin_to_stdout(contract, res, src)
         return ProcessResult(src=src, success=True, changed=changed)
 
-    if in_place:
+    if in_place and changed is Changed.YES:
         with open(src, "w") as fp:
             fp.write(res)
 
+    formatted_content = None if in_place else res
     return ProcessResult(
-        src=src, success=True, changed=changed, formatted_content=res
+        src=src,
+        success=True,
+        changed=changed,
+        formatted_content=formatted_content,
     )
 
 
@@ -208,9 +222,11 @@ def main(
         for source in sources
     ]
 
-    # Use multiprocessing to process files
-    with multiprocessing.Pool() as pool:
-        results = pool.map(process_file, args_list)
+    if len(args_list) <= 1:
+        results = [process_file(args) for args in args_list]
+    else:
+        with multiprocessing.Pool() as pool:
+            results = pool.map(process_file, args_list)
     report = Report(check=check, diff=diff, quiet=quiet, verbose=verbose)
 
     for result in results:

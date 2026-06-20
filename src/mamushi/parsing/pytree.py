@@ -23,14 +23,9 @@ from typing import (
     TypeVar,
     Union,
     Set,
-    Iterable,
 )
-from lark import Tree, Token
 
 __author__ = "Guido van Rossum <guido@python.org>"
-
-import sys
-from io import StringIO
 
 HUGE: int = 0x7FFFFFFF  # maximum repeat count, default max
 

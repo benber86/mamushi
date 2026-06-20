@@ -13,6 +13,7 @@ module: ( DOCSTRING
         | enum_def
         | flag_def
         | event_def
+        | error_def
         | implements_def
         | uses_def
         | export
@@ -76,6 +77,13 @@ indexed_event_arg: NAME ":" "indexed" "(" type ")"
 event_body: _NEWLINE _INDENT (((event_member | indexed_event_arg ) _NEWLINE)+ | _PASS _NEWLINE) _DEDENT
 // Events which use no args use a pass statement instead
 event_def: _EVENT_DECL NAME ":" ( event_body | _PASS )
+
+// Custom errors mirror event syntax, but without indexed fields
+_ERROR_DECL: "error"
+error_member: NAME ":" type
+// Errors which use no args use a pass statement instead
+error_body: _NEWLINE _INDENT ((error_member _NEWLINE)+ | _PASS _NEWLINE) _DEDENT
+error_def: _ERROR_DECL NAME ":" ( error_body | _PASS )
 
 // Enums
 _ENUM_DECL: "enum"

@@ -117,6 +117,7 @@ INTERFACE_FUNCTION = "interface_function"
 DECLARATIONS = {
     "_FUNC_DECL",
     "_EVENT_DECL",
+    "_ERROR_DECL",
     "_ENUM_DECL",
     "_STRUCT_DECL",
     "_INTERFACE_DECL",
@@ -125,6 +126,7 @@ DECLARATION = "declaration"
 CONSTANT_DEF = "constant_def"
 BODY = "body"
 EVENT_BODY = "event_body"
+ERROR_BODY = "error_body"
 ENUM_BODY = "enum_body"
 MODULE = "module"
 DEF_SUFFIX = "_def"
@@ -192,12 +194,14 @@ EXPORT = "export"
 STRUCT_DEF = "struct_def"
 ENUM_DEF = "enum_def"
 EVENT_DEF = "event_def"
+ERROR_DEF = "error_def"
 INDEXED_EVENT_ARG = "indexed_event_arg"
 EVENT_MEMBER = "event_member"
+ERROR_MEMBER = "error_member"
 ENUM_MEMBER = "enum_member"
 STRUCT_MEMBER = "struct_member"
 
-BODIES = {BODY, EVENT_BODY, ENUM_BODY, MODULE, STRUCT_DEF}
+BODIES = {BODY, EVENT_BODY, ERROR_BODY, ENUM_BODY, MODULE, STRUCT_DEF}
 
 SIMPLE_STATEMENTS = {
     VARIABLE_DEF,
@@ -218,8 +222,10 @@ SIMPLE_STATEMENTS = {
     STRUCT_DEF,
     ENUM_DEF,
     EVENT_DEF,
+    ERROR_DEF,
     INDEXED_EVENT_ARG,
     EVENT_MEMBER,
+    ERROR_MEMBER,
     ENUM_MEMBER,
     STRUCT_MEMBER,
     ASSIGN,
