@@ -1,5 +1,6 @@
 from mamushi.formatting.linegen import LineGenerator, EmptyLineTracker
 from mamushi.formatting.lines import Line, split_line
+from mamushi.parsing import tokens
 from mamushi.parsing.pytree import Node
 
 
@@ -23,6 +24,18 @@ def _outermost_fmt_regions(fmt_regions):
     return outermost
 
 
+def _contains_nosplit(line: Line) -> bool:
+    return any(
+        "# nosplit" in leaf.value
+        for leaf in line.leaves
+        if leaf.type == tokens.STANDALONE_COMMENT
+    ) or any(
+        "# nosplit" in comment.value
+        for comments in line.comments.values()
+        for comment in comments
+    )
+
+
 def format_tree(ast: Node, max_line_length: int = 80, parser=None) -> str:
     lg = LineGenerator(max_line_length)
     elt = EmptyLineTracker()
@@ -33,33 +46,35 @@ def format_tree(ast: Node, max_line_length: int = 80, parser=None) -> str:
     fmt_regions = _outermost_fmt_regions(
         parser._fmt_off_regions if parser else []
     )
+    has_fmt_regions = bool(fmt_regions)
     fmt_region_idx = 0
     fmt_skip_depth = 0
 
     for current_line in lg.visit(ast):
-        current_line_str = str(current_line)
-        if fmt_skip_depth:
-            if _contains_fmt_off(current_line_str):
-                fmt_skip_depth += 1
-            if _contains_fmt_on(current_line_str):
-                fmt_skip_depth -= 1
-            continue
+        if has_fmt_regions:
+            current_line_str = str(current_line)
+            if fmt_skip_depth:
+                if _contains_fmt_off(current_line_str):
+                    fmt_skip_depth += 1
+                if _contains_fmt_on(current_line_str):
+                    fmt_skip_depth -= 1
+                continue
 
-        if _contains_fmt_off(current_line_str) and fmt_region_idx < len(
-            fmt_regions
-        ):
-            _, _, orig_lines = fmt_regions[fmt_region_idx]
-            fmt_region_idx += 1
-            for line in orig_lines:
-                dst_contents.append(line + "\n")
-            fmt_skip_depth = 1
-            continue
+            if _contains_fmt_off(current_line_str) and fmt_region_idx < len(
+                fmt_regions
+            ):
+                _, _, orig_lines = fmt_regions[fmt_region_idx]
+                fmt_region_idx += 1
+                for line in orig_lines:
+                    dst_contents.append(line + "\n")
+                fmt_skip_depth = 1
+                continue
 
         dst_contents.append(str(empty_line) * after)
         before, after = elt.maybe_empty_lines(current_line)
         dst_contents.append(str(empty_line) * before)
-        if "# nosplit" in current_line_str:
-            dst_contents.append(current_line_str)
+        if _contains_nosplit(current_line):
+            dst_contents.append(str(current_line))
         else:
             for line in split_line(current_line, line_length=max_line_length):
                 dst_contents.append(str(line))
