@@ -13,7 +13,6 @@ from mamushi.parsing.tokens import NEWLINE
 
 CommentMapping = Dict[Tuple[Any, ...], Token]
 StandAloneCommentMapping = Dict[Tuple[Any, ...], List[Token]]
-DedentCount = Dict[Tuple[Any, ...], int]
 
 
 class Parser(object):

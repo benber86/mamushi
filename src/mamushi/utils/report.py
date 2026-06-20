@@ -13,12 +13,7 @@ from mamushi.utils.output import out, err
 
 class Changed(Enum):
     NO = 0
-    CACHED = 1
     YES = 2
-
-
-class NothingChanged(UserWarning):
-    """Raised when reformatted code is the same as source."""
 
 
 @dataclass
