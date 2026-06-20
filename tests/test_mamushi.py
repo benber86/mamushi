@@ -1,4 +1,5 @@
 import os
+import builtins
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,32 @@ def test_safe_skips_ast_compare_when_unchanged(monkeypatch):
             diff=False,
             in_place=False,
             check=True,
+            line_length=80,
+        )
+        assert result.success
+        assert result.changed is mamushi.Changed.NO
+    finally:
+        os.unlink(tmp_file)
+
+
+def test_in_place_skips_write_when_unchanged(monkeypatch):
+    tmp_file = Path(dump_to_file(MINIMAL_CONTRACT))
+    original_open = builtins.open
+
+    def fail_write_open(file, mode="r", *args, **kwargs):
+        if Path(file) == tmp_file and any(flag in mode for flag in "wax+"):
+            raise AssertionError("unchanged files should not be rewritten")
+        return original_open(file, mode, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", fail_write_open)
+    try:
+        result = mamushi.reformat(
+            tmp_file,
+            parser=mamushi.Parser(),
+            safe=True,
+            diff=False,
+            in_place=True,
+            check=False,
             line_length=80,
         )
         assert result.success

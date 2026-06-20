@@ -116,7 +116,7 @@ def reformat(
         format_stdin_to_stdout(contract, res, src)
         return ProcessResult(src=src, success=True, changed=changed)
 
-    if in_place:
+    if in_place and changed is Changed.YES:
         with open(src, "w") as fp:
             fp.write(res)
 
