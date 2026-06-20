@@ -3,6 +3,26 @@ from mamushi.formatting.lines import Line, split_line
 from mamushi.parsing.pytree import Node
 
 
+def _contains_fmt_off(line: str) -> bool:
+    return "# fmt: off" in line or "# fmt:off" in line
+
+
+def _contains_fmt_on(line: str) -> bool:
+    return "# fmt: on" in line or "# fmt:on" in line
+
+
+def _outermost_fmt_regions(fmt_regions):
+    outermost = []
+    for start, end, orig_lines in sorted(fmt_regions):
+        if any(
+            outer_start <= start and end <= outer_end
+            for outer_start, outer_end, _ in outermost
+        ):
+            continue
+        outermost.append((start, end, orig_lines))
+    return outermost
+
+
 def format_tree(ast: Node, max_line_length: int = 80, parser=None) -> str:
     lg = LineGenerator(max_line_length)
     elt = EmptyLineTracker()
@@ -10,44 +30,38 @@ def format_tree(ast: Node, max_line_length: int = 80, parser=None) -> str:
     after = 0
     dst_contents = []
 
-    # Build region mapping for fmt: off/on regions
-    fmt_regions = parser._fmt_off_regions if parser else []
-    region_map = {}  # line_num -> (start, end, original_lines)
-    processed_regions = set()  # Track which regions we've already emitted
-
-    for start, end, orig_lines in fmt_regions:
-        for line_num in range(start, end + 1):
-            region_map[line_num] = (start, end, orig_lines)
-
-    current_line_num = 1
+    fmt_regions = _outermost_fmt_regions(
+        parser._fmt_off_regions if parser else []
+    )
+    fmt_region_idx = 0
+    fmt_skip_depth = 0
 
     for current_line in lg.visit(ast):
-        # Check if we're in a fmt-off region
-        if current_line_num in region_map:
-            start, end, orig_lines = region_map[current_line_num]
-            region_id = (start, end)
+        current_line_str = str(current_line)
+        if fmt_skip_depth:
+            if _contains_fmt_off(current_line_str):
+                fmt_skip_depth += 1
+            if _contains_fmt_on(current_line_str):
+                fmt_skip_depth -= 1
+            continue
 
-            # Only emit the region once (when we first encounter it)
-            if region_id not in processed_regions:
-                for line in orig_lines:
-                    dst_contents.append(line + "\n")
-                processed_regions.add(region_id)
+        if _contains_fmt_off(current_line_str) and fmt_region_idx < len(
+            fmt_regions
+        ):
+            _, _, orig_lines = fmt_regions[fmt_region_idx]
+            fmt_region_idx += 1
+            for line in orig_lines:
+                dst_contents.append(line + "\n")
+            fmt_skip_depth = 1
+            continue
 
-            # Skip all lines in this region (including the end line)
-            if current_line_num <= end:
-                current_line_num += 1
-                continue
-
-        # Normal formatting (existing logic)
         dst_contents.append(str(empty_line) * after)
         before, after = elt.maybe_empty_lines(current_line)
         dst_contents.append(str(empty_line) * before)
-        if "# nosplit" in str(current_line):
-            dst_contents.append(str(current_line))
+        if "# nosplit" in current_line_str:
+            dst_contents.append(current_line_str)
         else:
             for line in split_line(current_line, line_length=max_line_length):
                 dst_contents.append(str(line))
-
-        current_line_num += 1
 
     return "".join(dst_contents)
