@@ -58,6 +58,29 @@ def test_check_file_no_diffs(runner):
         os.unlink(tmp_file)
 
 
+def test_safe_skips_ast_compare_when_unchanged(monkeypatch):
+    tmp_file = Path(dump_to_file(MINIMAL_CONTRACT))
+
+    def fail_compare(*args):
+        raise AssertionError("compare_ast should not run for unchanged files")
+
+    monkeypatch.setattr(mamushi, "compare_ast", fail_compare)
+    try:
+        result = mamushi.reformat(
+            tmp_file,
+            parser=mamushi.Parser(),
+            safe=True,
+            diff=False,
+            in_place=False,
+            check=True,
+            line_length=80,
+        )
+        assert result.success
+        assert result.changed is mamushi.Changed.NO
+    finally:
+        os.unlink(tmp_file)
+
+
 def test_check_file(runner):
     source, _ = read_data("assignments", "aug_assign_spacing.vy")
     tmp_file = Path(dump_to_file(source))

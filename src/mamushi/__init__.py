@@ -102,7 +102,7 @@ def reformat(
     res = format_tree(src_content, line_length, parser=parser)
     changed = Changed.NO if res == contract else Changed.YES
 
-    if safe and not compare_ast(contract, res):
+    if safe and changed is Changed.YES and not compare_ast(contract, res):
         return ProcessResult(
             src=src,
             success=False,
