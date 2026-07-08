@@ -725,9 +725,13 @@ def delimiter_split(
 
     bt = line.bracket_tracker
     try:
-        delimiter_priority = bt.max_delimiter_priority(exclude={id(last_leaf)})
+        delimiter_priority: Optional[int] = bt.max_delimiter_priority(
+            exclude={id(last_leaf)}
+        )
     except ValueError:
-        raise CannotSplit("No delimiters found") from None
+        if not line.contains_standalone_comments():
+            raise CannotSplit("No delimiters found") from None
+        delimiter_priority = None
 
     if delimiter_priority == DOT_PRIORITY:
         if bt.delimiter_count_with_priority(delimiter_priority) == 1:
@@ -757,7 +761,10 @@ def delimiter_split(
             yield from append_to_line(comment_after)
 
         leaf_priority = bt.delimiters.get(id(leaf))
-        if leaf_priority == delimiter_priority:
+        if (
+            delimiter_priority is not None
+            and leaf_priority == delimiter_priority
+        ):
             yield current_line
 
             current_line = Line(
