@@ -1,7 +1,7 @@
 "Provides Indentation services for languages with indentation similar to Python"
 
 from abc import ABC, abstractmethod
-from typing import List, Iterator, Tuple
+from typing import List, Iterator, Optional, Tuple
 from mamushi.parsing.tokens import (
     OPENING_BRACKETS,
     CLOSING_BRACKETS,
@@ -60,8 +60,8 @@ class Indenter(PostLex, ABC):
                     prev_tab_len = cur_tab_len
                 else:
                     prev_tab_len = prev_tab_len - self.tab_len
-                    # the newline will get added to a newline token and is gone
-                    # need to add it back as prefix to next comment
+                    # add back the newline a newline token usually eats
+                    # (handle_NL drops it again when nothing eats it)
                     res[-1] += "\n"
             else:
                 res[-1] += "\n" + element
@@ -102,6 +102,8 @@ class Indenter(PostLex, ABC):
             index = 0
             newline = False  # whether we've created the leading newline or not
             newline_caption = ""
+            last_dedent: Optional[Token] = None
+            consumed = 0
             while indent < self.indent_level[-1]:
                 caption = (
                     dedent_captions[index]
@@ -126,9 +128,23 @@ class Indenter(PostLex, ABC):
                         self.NL_type, newline_caption.rstrip(), token
                     )
                     newline = True
+                    # the newline we just emitted is empty, so the one
+                    # split_into_dedents added would show up as a blank line
+                    if "#" in caption:
+                        caption = caption.lstrip("\n")
                 self.indent_level.pop()
-                yield self.create_dent_on_next_line(
+                consumed = index
+                last_dedent = self.create_dent_on_next_line(
                     self.DEDENT_type, caption, token, 1
+                )
+                yield last_dedent
+
+            # there can be more captions than levels to pop; the extra ones
+            # hold comments after the dedent, so keep them instead of dropping
+            if last_dedent is not None and consumed < len(dedent_captions):
+                rest = "".join(dedent_captions[consumed:])
+                last_dedent.value = (
+                    last_dedent.value.rstrip("\n") + "\n" + rest.lstrip("\n")
                 )
 
             if indent != self.indent_level[-1]:
