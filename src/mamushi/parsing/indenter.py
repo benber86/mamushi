@@ -129,9 +129,10 @@ class Indenter(PostLex, ABC):
                     )
                     newline = True
                     # the newline we just emitted is empty, so the one
-                    # split_into_dedents added would show up as a blank line
-                    if "#" in caption:
-                        caption = caption.lstrip("\n")
+                    # split_into_dedents added would show up as a blank line.
+                    # drop just that one, any others are the user's blank lines
+                    if "#" in caption and caption.startswith("\n"):
+                        caption = caption[1:]
                 self.indent_level.pop()
                 consumed = index
                 last_dedent = self.create_dent_on_next_line(
@@ -142,9 +143,15 @@ class Indenter(PostLex, ABC):
             # there can be more captions than levels to pop; the extra ones
             # hold comments after the dedent, so keep them instead of dropping
             if last_dedent is not None and consumed < len(dedent_captions):
-                rest = "".join(dedent_captions[consumed:])
+                surplus = dedent_captions[consumed:]
+                # every caption carries one padding newline split_into_dedents
+                # added; keep the rest, they are the user's blank lines
+                blanks = sum(
+                    max(len(c) - len(c.lstrip("\n")) - 1, 0) for c in surplus
+                )
+                tail = surplus[-1].lstrip("\n")
                 last_dedent.value = (
-                    last_dedent.value.rstrip("\n") + "\n" + rest.lstrip("\n")
+                    last_dedent.value.rstrip("\n") + "\n" * (blanks + 1) + tail
                 )
 
             if indent != self.indent_level[-1]:
