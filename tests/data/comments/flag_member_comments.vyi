@@ -1,0 +1,14 @@
+# pragma version 0.5.0b1
+x: uint256
+
+
+flag Epoch:
+    # Bit values
+    SLEEP  # 1
+    COLLECT  # 2
+    # End of members
+
+
+@external
+def f():
+    pass
