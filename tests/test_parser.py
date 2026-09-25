@@ -2,6 +2,25 @@ import pytest
 from mamushi import compare_ast
 
 
+@pytest.mark.parametrize("module", ["contracts.utils", ".", "..utils"])
+@pytest.mark.parametrize(
+    "names",
+    [
+        "constants",
+        "constants as c",
+        "constants, roles",
+        "constants as c, roles",
+        "constants, roles as r",
+        "constants as c, roles as r, permissions",
+    ],
+)
+def test_from_import_parentheses_preserve_ast(module, names):
+    assert compare_ast(
+        f"from {module} import {names}\n",
+        f"from {module} import ({names})\n",
+    )
+
+
 def test_comparator():
     test_input = """
 # @version=0.0.1
