@@ -60,6 +60,18 @@ def test_check_file_no_diffs(runner):
         os.unlink(tmp_file)
 
 
+@pytest.mark.parametrize("option", ["--check", "--diff"])
+def test_flag_member_comments(runner, tmp_path, option):
+    source, _ = read_data("comments", "flag_member_comments")
+    path = tmp_path / "flags.vyi"
+    path.write_text(source)
+    result = runner.invoke(mamushi.main, [option, str(path)])
+    assert result.exit_code == 0, result.stderr
+    assert result.stdout == ""
+    assert "left unchanged" in result.stderr
+    assert path.read_text() == source
+
+
 def test_safe_skips_ast_compare_when_unchanged(monkeypatch):
     tmp_file = Path(dump_to_file(MINIMAL_CONTRACT))
 

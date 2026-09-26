@@ -119,6 +119,7 @@ DECLARATIONS = {
     "_EVENT_DECL",
     "_ERROR_DECL",
     "_ENUM_DECL",
+    "_FLAG_DECL",
     "_STRUCT_DECL",
     "_INTERFACE_DECL",
 }
@@ -128,6 +129,7 @@ BODY = "body"
 EVENT_BODY = "event_body"
 ERROR_BODY = "error_body"
 ENUM_BODY = "enum_body"
+FLAG_BODY = "flag_body"
 MODULE = "module"
 DEF_SUFFIX = "_def"
 RETURN_TYPE = "_RETURN_TYPE"
@@ -193,15 +195,25 @@ USES_DEF = "uses_def"
 EXPORT = "export"
 STRUCT_DEF = "struct_def"
 ENUM_DEF = "enum_def"
+FLAG_DEF = "flag_def"
 EVENT_DEF = "event_def"
 ERROR_DEF = "error_def"
 INDEXED_EVENT_ARG = "indexed_event_arg"
 EVENT_MEMBER = "event_member"
 ERROR_MEMBER = "error_member"
 ENUM_MEMBER = "enum_member"
+FLAG_MEMBER = "flag_member"
 STRUCT_MEMBER = "struct_member"
 
-BODIES = {BODY, EVENT_BODY, ERROR_BODY, ENUM_BODY, MODULE, STRUCT_DEF}
+BODIES = {
+    BODY,
+    EVENT_BODY,
+    ERROR_BODY,
+    ENUM_BODY,
+    FLAG_BODY,
+    MODULE,
+    STRUCT_DEF,
+}
 
 SIMPLE_STATEMENTS = {
     VARIABLE_DEF,
@@ -221,12 +233,14 @@ SIMPLE_STATEMENTS = {
     INTERFACE_DEF,
     STRUCT_DEF,
     ENUM_DEF,
+    FLAG_DEF,
     EVENT_DEF,
     ERROR_DEF,
     INDEXED_EVENT_ARG,
     EVENT_MEMBER,
     ERROR_MEMBER,
     ENUM_MEMBER,
+    FLAG_MEMBER,
     STRUCT_MEMBER,
     ASSIGN,
     AUG_ASSIGN,

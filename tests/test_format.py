@@ -1,6 +1,7 @@
 from tests.reader import all_data_cases, read_data, all_data
 import pytest
 from mamushi.formatting.format import format_tree
+from mamushi import compare_ast
 
 test_cases = [
     (category, case)
@@ -24,3 +25,28 @@ def test_format_idempotent(case: str, category: str, parser):
     first = format_tree(parser.parse(source), parser=parser).strip()
     second = format_tree(parser.parse(first), parser=parser).strip()
     assert first == second
+
+
+@pytest.mark.parametrize(
+    "prefix",
+    [
+        "",
+        "x: uint256\n\n\n",
+        "from contracts import roles\n\n\n",
+        '"""Module documentation."""\n\n\n',
+    ],
+)
+@pytest.mark.parametrize(
+    "comments", [("", ""), ("  # 1", ""), ("", "  # 2"), ("  # 1", "  # 2")]
+)
+def test_flag_member_comments(prefix, comments, parser):
+    source = (
+        f"{prefix}flag Epoch:\n"
+        f"    SLEEP{comments[0]}\n"
+        f"    COLLECT{comments[1]}\n"
+        "\n\n@external\ndef f():\n    pass\n"
+    )
+    formatted = format_tree(parser.parse(source), parser=parser)
+    assert formatted == source
+    assert compare_ast(source, formatted)
+    assert format_tree(parser.parse(formatted), parser=parser) == formatted
